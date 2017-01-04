@@ -64,23 +64,11 @@ int main(){
 
 	glViewport(0, 0, screenWidth, screenHeight);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 
 	// Shader
 	Shader cubeShader("VShader", "FShader");
-
-	//GLuint VBO, VAO;
-	//glGenVertexArrays(1, &VAO);
-	//glGenBuffers(1, &VBO);
-	//glBindVertexArray(VAO);
-	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
-	//// Œª÷√ Ù–‘
-	//glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
-	//glEnableVertexAttribArray(0);
-	//glBindBuffer(GL_ARRAY_BUFFER, 0); 
-	//glBindVertexArray(0);
-
-	
 
 	// Game loop
 	while (!glfwWindowShouldClose(window)){
@@ -117,7 +105,7 @@ int main(){
 					if (cubeAttribute[i][j][k] == soil) {
 						model = glm::translate(model, glm::vec3((float)i*CUBESIZE * 2, (float)k * CUBESIZE * 2, (float)j*CUBESIZE * 2));
 						for (int l = 0; l < 36; l++) {
-							glm::vec4 cubeVec = model * glm::vec4(cubeVertices[l * 3], cubeVertices[l * 3 + 1], cubeVertices[l * 3 + 2], 1.0f);
+							glm::vec4 cubeVec = model * glm::vec4(cubeVertices[l * 5], cubeVertices[l * 5 + 1], cubeVertices[l * 5 + 2], 1.0f);
 							allCubeVertices[verticeNumber * 4] = cubeVec.x;
 							allCubeVertices[verticeNumber * 4 + 1] = cubeVec.y;
 							allCubeVertices[verticeNumber * 4 + 2] = cubeVec.z;
