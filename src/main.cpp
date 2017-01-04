@@ -47,7 +47,7 @@ int main(){
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	glfwWindowHint(GLFW_SAMPLES, 4);
 
-	GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "LearnOpenGL", nullptr, nullptr); // Windowed
+	GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "CG_Final", nullptr, nullptr); // Windowed
 	glfwMakeContextCurrent(window);
 
 	// Set the required callback functions
@@ -67,16 +67,31 @@ int main(){
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
+
 	// Shader
 	Shader cubeShader("VShader", "FShader");
 
-	// Game loop
+	GLuint VBO, VAO;
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+	// 位置属性
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	// 法线
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
 	while (!glfwWindowShouldClose(window)){
 		// Set frame time
 		GLfloat currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-
+		cout << 1 / deltaTime << endl;
 		// Check and call events
 		glfwPollEvents();
 		Do_Movement();
@@ -86,56 +101,46 @@ int main(){
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// draw
 		cubeShader.Use();
+
 		glm::mat4 view;
         view = camera.GetViewMatrix();
         glm::mat4 projection;	
         projection = glm::perspective(camera.Zoom, (float)screenWidth/(float)screenHeight, 0.1f, 1000.0f);
+
         // Get the uniform locations
-        GLint viewLoc = glGetUniformLocation(cubeShader.Program, "view");
-        GLint projLoc = glGetUniformLocation(cubeShader.Program, "projection");
+        GLint modelLoc = glGetUniformLocation(cubeShader.Program, "model");
+		GLint modelAdjustLoc = glGetUniformLocation(cubeShader.Program, "modelAdjust");
+		GLint viewLoc = glGetUniformLocation(cubeShader.Program, "view");
+        GLint projLoc = glGetUniformLocation(cubeShader.Program, "projection"); 
+		GLint lightPosLoc = glGetUniformLocation(cubeShader.Program, "lightPos");
         // Pass the matrices to the shader
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-        
-        
+		glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
+		
+		glBindVertexArray(VAO);
 		for (int i = 0; i < WORLDWIDTH; i++) {
 			for (int j = 0; j < WORLDLENGTH; j++) {
 				for (int k = 0; k < WORLDHEIGHT; k++) {
-					glm::mat4 model;
 					if (cubeAttribute[i][j][k] == soil) {
+						glm::mat4 model;
 						model = glm::translate(model, glm::vec3((float)i*CUBESIZE * 2, (float)k * CUBESIZE * 2, (float)j*CUBESIZE * 2));
-						for (int l = 0; l < 36; l++) {
-							glm::vec4 cubeVec = model * glm::vec4(cubeVertices[l * 5], cubeVertices[l * 5 + 1], cubeVertices[l * 5 + 2], 1.0f);
-							allCubeVertices[verticeNumber * 4] = cubeVec.x;
-							allCubeVertices[verticeNumber * 4 + 1] = cubeVec.y;
-							allCubeVertices[verticeNumber * 4 + 2] = cubeVec.z;
-							allCubeVertices[verticeNumber * 4 + 3] = cubeVec.w;
-							verticeNumber++;
-						}
+						//glm::mat3 modelAdjust = glm::mat3(transpose(inverse(model)));
+						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+						//glUniformMatrix4fv(modelAdjustLoc, 1, GL_FALSE, glm::value_ptr(modelAdjust));
+						glDrawArrays(GL_TRIANGLES, 0, 36);
 					}
 				}
 			}
 		}
-		GLuint VBO, VAO;
-		glGenVertexArrays(1, &VAO);
-		glGenBuffers(1, &VBO);
-		glBindVertexArray(VAO);
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(allCubeVertices), allCubeVertices, GL_STATIC_DRAW);
-		// 位置属性
-		glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
-		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glDrawArrays(GL_TRIANGLES, 0, 3 * verticeNumber);
-        // Calculate the model matrix for each object and pass it to shader before drawing
-        glBindVertexArray(0);
+
+		glBindVertexArray(0);
         // Swap the buffers
         glfwSwapBuffers(window);
-		glDeleteVertexArrays(1, &VAO);
-		glDeleteBuffers(1, &VBO);
-		verticeNumber = 0;
     }
     // Properly de-allocate all resources once they've outlived their purpose
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
 	glfwTerminate();
 	return 0;
 }

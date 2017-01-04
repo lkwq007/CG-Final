@@ -19,7 +19,10 @@ using namespace std;
 #define WORLDLENGTH	100
 #define WORLDHEIGHT	20
 #define CUBESIZE	0.2f
-#define FILTERSIZE	7
+#define FILTERSIZE	5
+#define LIGHTPOSX	50
+#define LIGHTPOSY	50
+#define LIGHTPOSZ	50
 
 enum CubeType{
 	air,
@@ -29,55 +32,56 @@ enum CubeType{
 };
 
 CubeType cubeAttribute[WORLDWIDTH][WORLDLENGTH][WORLDHEIGHT];
-
+glm::vec3 lightPos = glm::vec3(LIGHTPOSX * CUBESIZE * 2, LIGHTPOSY * CUBESIZE * 2, LIGHTPOSZ * CUBESIZE * 2);
 GLfloat cubeVertices[] = {
+	// 面								法线					纹理
 	// Back face
-	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, 0.0f, // Bottom-left
-	CUBESIZE,  CUBESIZE, -CUBESIZE,  1.0f, 1.0f, // top-right
-	CUBESIZE, -CUBESIZE, -CUBESIZE,  1.0f, 0.0f, // bottom-right         
-	CUBESIZE,  CUBESIZE, -CUBESIZE,  1.0f, 1.0f, // top-right
-	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, 0.0f, // bottom-left
-	-CUBESIZE,  CUBESIZE, -CUBESIZE,  0.0f, 1.0f, // top-left
+	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f, // Bottom-left
+	CUBESIZE,  CUBESIZE, -CUBESIZE,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f, // top-right
+	CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f, // bottom-right         
+	CUBESIZE,  CUBESIZE, -CUBESIZE,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f, // top-right
+	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f, // bottom-left
+	-CUBESIZE,  CUBESIZE, -CUBESIZE,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f, // top-left
 									  // Front face
-	-CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, 0.0f, // bottom-left
-	CUBESIZE, -CUBESIZE,  CUBESIZE,  1.0f, 0.0f, // bottom-right
-	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f, 1.0f, // top-right
-	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f, 1.0f, // top-right
-	-CUBESIZE,  CUBESIZE,  CUBESIZE,  0.0f, 1.0f, // top-left
-	-CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, 0.0f, // bottom-left
+	-CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f,  0.0f, 1.0f,  0.0f, 0.0f, // bottom-left
+	CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f,  0.0f, 1.0f,  1.0f, 0.0f, // bottom-right
+	CUBESIZE,  CUBESIZE,  CUBESIZE,  0.0f,  0.0f, 1.0f,  1.0f, 1.0f, // top-right
+	CUBESIZE,  CUBESIZE,  CUBESIZE,  0.0f,  0.0f, 1.0f,  1.0f, 1.0f, // top-right
+	-CUBESIZE,  CUBESIZE,  CUBESIZE,  0.0f,  0.0f, 1.0f,  0.0f, 1.0f, // top-left
+	-CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f,  0.0f, 1.0f,  0.0f, 0.0f, // bottom-left
 									  // Left face
-	-CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f, 0.0f, // top-right
-	-CUBESIZE,  CUBESIZE, -CUBESIZE,  1.0f, 1.0f, // top-left
-	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, 1.0f, // bottom-left
-	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, 1.0f, // bottom-left
-	-CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, 0.0f, // bottom-right
-	-CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f, 0.0f, // top-right
+	-CUBESIZE,  CUBESIZE,  CUBESIZE, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f, // top-right
+	-CUBESIZE,  CUBESIZE, -CUBESIZE, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f, // top-left
+	-CUBESIZE, -CUBESIZE, -CUBESIZE, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f, // bottom-left
+	-CUBESIZE, -CUBESIZE, -CUBESIZE, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f, // bottom-left
+	-CUBESIZE, -CUBESIZE,  CUBESIZE, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f, // bottom-right
+	-CUBESIZE,  CUBESIZE,  CUBESIZE, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f, // top-right
 									  // Right face
-	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f, 0.0f, // top-left
-	CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, 1.0f, // bottom-right
-	CUBESIZE,  CUBESIZE, -CUBESIZE,  1.0f, 1.0f, // top-right         
-	CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, 1.0f, // bottom-right
-	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f, 0.0f, // top-left
-	CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, 0.0f, // bottom-left     
+	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, // top-left
+	CUBESIZE, -CUBESIZE, -CUBESIZE,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f, // bottom-right
+	CUBESIZE,  CUBESIZE, -CUBESIZE,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, // top-right         
+	CUBESIZE, -CUBESIZE, -CUBESIZE,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f, // bottom-right
+	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, // top-left
+	CUBESIZE, -CUBESIZE,  CUBESIZE,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f, // bottom-left     
 									 // Bottom face
-	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, 1.0f, // top-right
-	CUBESIZE, -CUBESIZE, -CUBESIZE,  1.0f, 1.0f, // top-left
-	CUBESIZE, -CUBESIZE,  CUBESIZE,  1.0f, 0.0f, // bottom-left
-	CUBESIZE, -CUBESIZE,  CUBESIZE,  1.0f, 0.0f, // bottom-left
-	-CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, 0.0f, // bottom-right
-	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, 1.0f, // top-right
+	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f, // top-right
+	CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f, // top-left
+	CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f, // bottom-left
+	CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f, // bottom-left
+	-CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f, // bottom-right
+	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f, // top-right
 									  // Top face
-	-CUBESIZE,  CUBESIZE, -CUBESIZE,  0.0f, 1.0f, // top-left
-	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f, 0.0f, // bottom-right
-	CUBESIZE,  CUBESIZE, -CUBESIZE,  1.0f, 1.0f, // top-right     
-	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f, 0.0f, // bottom-right
-	-CUBESIZE,  CUBESIZE, -CUBESIZE,  0.0f, 1.0f, // top-left
-	-CUBESIZE,  CUBESIZE,  CUBESIZE,  0.0f, 0.0f  // bottom-left        
+	-CUBESIZE,  CUBESIZE, -CUBESIZE,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f, // top-left
+	CUBESIZE,  CUBESIZE,  CUBESIZE,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, // bottom-right
+	CUBESIZE,  CUBESIZE, -CUBESIZE,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f, // top-right     
+	CUBESIZE,  CUBESIZE,  CUBESIZE,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, // bottom-right
+	-CUBESIZE,  CUBESIZE, -CUBESIZE,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f, // top-left
+	-CUBESIZE,  CUBESIZE,  CUBESIZE,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f  // bottom-left        
 };
 
 //glm::vec3 cubePositions[WORLDWIDTH][WORLDLENGTH][WORLDHEIGHT];
-int verticeNumber = 0;
-GLfloat allCubeVertices[WORLDWIDTH * WORLDLENGTH * WORLDHEIGHT * 36 * 4];
+//int verticeNumber = 0;
+//GLfloat allCubeVertices[WORLDWIDTH * WORLDLENGTH * WORLDHEIGHT * 36 * 4];
 void averageFilter(int altitudeRandom[WORLDWIDTH + FILTERSIZE - 1][WORLDLENGTH + FILTERSIZE - 1], int altitudeAverage[WORLDWIDTH][WORLDLENGTH]) {
 	for (int i = 0; i < WORLDWIDTH; i++) {
 		for (int j = 0; j < WORLDLENGTH; j++) {
