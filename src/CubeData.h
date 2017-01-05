@@ -37,7 +37,7 @@ CubeType cubeAttribute[WORLDWIDTH][WORLDLENGTH][WORLDHEIGHT];
 glm::vec3 lightPos = glm::vec3(LIGHTPOSX * CUBESIZE * 2, LIGHTPOSY * CUBESIZE * 2, LIGHTPOSZ * CUBESIZE * 2);
 GLfloat cubeVertices[] = {
 	// 面								法线					纹理
-	// Back face
+										// Back face
 	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f, // Bottom-left
 	CUBESIZE,  CUBESIZE, -CUBESIZE,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f, // top-right
 	CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f, // bottom-right         
@@ -52,25 +52,25 @@ GLfloat cubeVertices[] = {
 	-CUBESIZE,  CUBESIZE,  CUBESIZE,  0.0f,  0.0f, 1.0f,  0.0f, 1.0f, // top-left
 	-CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f,  0.0f, 1.0f,  0.0f, 0.0f, // bottom-left
 									  // Left face
-	-CUBESIZE,  CUBESIZE,  CUBESIZE, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f, // top-right
-	-CUBESIZE,  CUBESIZE, -CUBESIZE, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f, // top-left
-	-CUBESIZE, -CUBESIZE, -CUBESIZE, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f, // bottom-left
-	-CUBESIZE, -CUBESIZE, -CUBESIZE, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f, // bottom-left
-	-CUBESIZE, -CUBESIZE,  CUBESIZE, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f, // bottom-right
-	-CUBESIZE,  CUBESIZE,  CUBESIZE, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f, // top-right
+	-CUBESIZE,  CUBESIZE,  CUBESIZE, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f, // top-right
+	-CUBESIZE,  CUBESIZE, -CUBESIZE, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f, // top-left
+	-CUBESIZE, -CUBESIZE, -CUBESIZE, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f, // bottom-left
+	-CUBESIZE, -CUBESIZE, -CUBESIZE, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f, // bottom-left
+	-CUBESIZE, -CUBESIZE,  CUBESIZE, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f, // bottom-right
+	-CUBESIZE,  CUBESIZE,  CUBESIZE, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f, // top-right
 									  // Right face
-	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, // top-left
-	CUBESIZE, -CUBESIZE, -CUBESIZE,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f, // bottom-right
+	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f, // top-left
+	CUBESIZE, -CUBESIZE, -CUBESIZE,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, // botetom-right
 	CUBESIZE,  CUBESIZE, -CUBESIZE,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, // top-right         
-	CUBESIZE, -CUBESIZE, -CUBESIZE,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f, // bottom-right
-	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, // top-left
+	CUBESIZE, -CUBESIZE, -CUBESIZE,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, // bottom-right
+	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f, // top-left
 	CUBESIZE, -CUBESIZE,  CUBESIZE,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f, // bottom-left     
 									 // Bottom face
 	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f, // top-right
-	CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f, // top-left
-	CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f, // bottom-left
-	CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f, // bottom-left
-	-CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f, // bottom-right
+	CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f, // top-left
+	CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f, // bottom-left
+	CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f, // bottom-left
+	-CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f, // bottom-right
 	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f, // top-right
 									  // Top face
 	-CUBESIZE,  CUBESIZE, -CUBESIZE,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f, // top-left
@@ -83,6 +83,7 @@ GLfloat cubeVertices[] = {
 
 GLfloat soilCubeVertices[sizeof(cubeVertices) / sizeof(GLfloat)];
 GLfloat stoneCubeVertices[sizeof(cubeVertices) / sizeof(GLfloat)];
+GLfloat grassCubeVertices[sizeof(cubeVertices) / sizeof(GLfloat)];
 //glm::vec3 cubePositions[WORLDWIDTH][WORLDLENGTH][WORLDHEIGHT];
 //int verticeNumber = 0;
 //GLfloat allCubeVertices[WORLDWIDTH * WORLDLENGTH * WORLDHEIGHT * 36 * 4];
@@ -123,24 +124,47 @@ void initCubeAttribute(void) {
 			for (int k = 0; k < MAX(altitudeAverage[i][j] - 3, 0); k++){
 				cubeAttribute[i][j][k] = stone;
 			}
-			for (int k = MAX(altitudeAverage[i][j] - 3, 0); k < altitudeAverage[i][j]; k++) {
+			for (int k = MAX(altitudeAverage[i][j] - 3, 0); k < MAX(altitudeAverage[i][j] - 1, 0); k++) {
 				cubeAttribute[i][j][k] = soil;
 			}
+			cubeAttribute[i][j][altitudeAverage[i][j] - 1] = grass;
 		}
 	}
-
+	//soil
 	memcpy(soilCubeVertices, cubeVertices, sizeof(cubeVertices));
 	for (int l = 0; l < 36; l++) {
-		soilCubeVertices[l * 8 + 6] *= 1.0 / 16;
-		soilCubeVertices[l * 8 + 6] += 6.0 / 16;
-		soilCubeVertices[l * 8 + 7] *= 1.0 / 16;
-		soilCubeVertices[l * 8 + 7] += 15.0 / 16;
+		soilCubeVertices[l * 8 + 6] *= 1.0 / 16 / 16 * 12;
+		soilCubeVertices[l * 8 + 6] += (6 * 16 + 3) * 1.0 / 256;
+		soilCubeVertices[l * 8 + 7] *= 1.0 / 16 / 16 * 12;
+		soilCubeVertices[l * 8 + 7] += (15 * 16 + 3) * 1.0 / 256;
 	}
+	//stone
 	memcpy(stoneCubeVertices, cubeVertices, sizeof(cubeVertices));
 	for (int l = 0; l < 36; l++) {
-		stoneCubeVertices[l * 8 + 6] *= 1.0 / 16;
-		stoneCubeVertices[l * 8 + 6] += 5.0 / 16;
-		stoneCubeVertices[l * 8 + 7] *= 1.0 / 16;
-		stoneCubeVertices[l * 8 + 7] += 15.0 / 16;
+		stoneCubeVertices[l * 8 + 6] *= 1.0 / 16 / 16 * 12;
+		stoneCubeVertices[l * 8 + 6] += (5 * 16 + 3) * 1.0 / 256;
+		stoneCubeVertices[l * 8 + 7] *= 1.0 / 16 / 16 * 12;
+		stoneCubeVertices[l * 8 + 7] += (15 * 16 + 3) * 1.0 / 256;
+	}
+	//grass
+	memcpy(grassCubeVertices, cubeVertices, sizeof(cubeVertices));
+	for (int l = 0; l < 24; l++) {
+		grassCubeVertices[l * 8 + 6] *= 1.0 / 16 / 16 * 12;
+		grassCubeVertices[l * 8 + 6] += 0;//(1 * 16 + 3) * 1.0 / 256;
+		grassCubeVertices[l * 8 + 7] *= 1.0 / 16 / 16 * 12;
+		grassCubeVertices[l * 8 + 7] = 1.0 / 16 / 16 * 12 - grassCubeVertices[l * 8 + 7];
+		grassCubeVertices[l * 8 + 7] += (14 * 16 + 3) * 1.0 / 256;
+	}
+	for (int l = 24; l < 30; l++) {
+		grassCubeVertices[l * 8 + 6] *= 1.0 / 16 / 16 * 12;
+		grassCubeVertices[l * 8 + 6] += 0;//(5 * 16 + 3) * 1.0 / 256;
+		grassCubeVertices[l * 8 + 7] *= 1.0 / 16 / 16 * 12;
+		grassCubeVertices[l * 8 + 7] += (14 * 16 + 3) * 1.0 / 256;
+	}
+	for (int l = 30; l < 36; l++) {
+		grassCubeVertices[l * 8 + 6] *= 1.0 / 16 / 16 * 12;
+		grassCubeVertices[l * 8 + 6] += 0;//(5 * 16 + 3) * 1.0 / 256;
+		grassCubeVertices[l * 8 + 7] *= 1.0 / 16 / 16 * 12;
+		grassCubeVertices[l * 8 + 7] += (13 * 16 + 3) * 1.0 / 256;
 	}
 }
