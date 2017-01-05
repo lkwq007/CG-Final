@@ -24,6 +24,8 @@ using namespace std;
 #define LIGHTPOSY	50
 #define LIGHTPOSZ	50
 
+#define MAX(x,y)	((x<y)?y:x)
+
 enum CubeType{
 	air,
 	soil,
@@ -79,6 +81,8 @@ GLfloat cubeVertices[] = {
 	-CUBESIZE,  CUBESIZE,  CUBESIZE,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f  // bottom-left        
 };
 
+GLfloat soilCubeVertices[sizeof(cubeVertices) / sizeof(GLfloat)];
+GLfloat stoneCubeVertices[sizeof(cubeVertices) / sizeof(GLfloat)];
 //glm::vec3 cubePositions[WORLDWIDTH][WORLDLENGTH][WORLDHEIGHT];
 //int verticeNumber = 0;
 //GLfloat allCubeVertices[WORLDWIDTH * WORLDLENGTH * WORLDHEIGHT * 36 * 4];
@@ -116,9 +120,27 @@ void initCubeAttribute(void) {
 	for (int i = 0; i < WORLDWIDTH; i++) {
 		for (int j = 0; j < WORLDLENGTH; j++) {
 			//cubePositions[cubeNumber++] = glm::vec3((float)i*CUBESIZE * 2, (float)altitudeAverage[i][j] *CUBESIZE * 2, (float)j*CUBESIZE * 2);
-			for (int k = 0; k < altitudeAverage[i][j]; k++){
+			for (int k = 0; k < MAX(altitudeAverage[i][j] - 3, 0); k++){
+				cubeAttribute[i][j][k] = stone;
+			}
+			for (int k = MAX(altitudeAverage[i][j] - 3, 0); k < altitudeAverage[i][j]; k++) {
 				cubeAttribute[i][j][k] = soil;
 			}
 		}
+	}
+
+	memcpy(soilCubeVertices, cubeVertices, sizeof(cubeVertices));
+	for (int l = 0; l < 36; l++) {
+		soilCubeVertices[l * 8 + 6] *= 1.0 / 16;
+		soilCubeVertices[l * 8 + 6] += 6.0 / 16;
+		soilCubeVertices[l * 8 + 7] *= 1.0 / 16;
+		soilCubeVertices[l * 8 + 7] += 15.0 / 16;
+	}
+	memcpy(stoneCubeVertices, cubeVertices, sizeof(cubeVertices));
+	for (int l = 0; l < 36; l++) {
+		stoneCubeVertices[l * 8 + 6] *= 1.0 / 16;
+		stoneCubeVertices[l * 8 + 6] += 5.0 / 16;
+		stoneCubeVertices[l * 8 + 7] *= 1.0 / 16;
+		stoneCubeVertices[l * 8 + 7] += 15.0 / 16;
 	}
 }

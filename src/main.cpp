@@ -16,7 +16,7 @@
 
 #include <iostream>
 
-GLuint screenWidth = 800, screenHeight = 600;
+int screenWidth = 800, screenHeight = 600;
 
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -71,27 +71,61 @@ int main(){
 	// Shader
 	Shader cubeShader("VShader", "FShader");
 
-	GLuint VBO, VAO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glBindVertexArray(VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+	GLuint soilVBO, soilVAO;
+	glGenVertexArrays(1, &soilVAO);
+	glGenBuffers(1, &soilVBO);
+	glBindVertexArray(soilVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, soilVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(soilCubeVertices), soilCubeVertices, GL_STATIC_DRAW);
 	// 位置属性
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 	// 法线
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	// 纹理
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
 	glBindVertexArray(0);
+
+	GLuint stoneVBO, stoneVAO;
+	glGenVertexArrays(1, &stoneVAO);
+	glGenBuffers(1, &stoneVBO);
+	glBindVertexArray(stoneVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, stoneVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(stoneCubeVertices), stoneCubeVertices, GL_STATIC_DRAW);
+	// 位置属性
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	// 法线
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	// 纹理
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
+	glBindVertexArray(0);
+
+	// 加载纹理
+	GLuint cubeTexture;
+	glGenTextures(1, &cubeTexture);
+	glBindTexture(GL_TEXTURE_2D, cubeTexture); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	unsigned char* image = SOIL_load_image("texture.png", &screenWidth, &screenHeight, 0, SOIL_LOAD_RGB);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screenWidth, screenHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	SOIL_free_image_data(image);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	while (!glfwWindowShouldClose(window)){
 		// Set frame time
 		GLfloat currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-		cout << 1 / deltaTime << endl;
+		//fps
+		//cout << 1 / deltaTime << endl;
 		// Check and call events
 		glfwPollEvents();
 		Do_Movement();
@@ -101,6 +135,10 @@ int main(){
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// draw
 		cubeShader.Use();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, cubeTexture);
+		glUniform1i(glGetUniformLocation(cubeShader.Program, "cubeTexture"), 0);
 
 		glm::mat4 view;
         view = camera.GetViewMatrix();
@@ -118,29 +156,42 @@ int main(){
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 		glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
 		
-		glBindVertexArray(VAO);
 		for (int i = 0; i < WORLDWIDTH; i++) {
 			for (int j = 0; j < WORLDLENGTH; j++) {
 				for (int k = 0; k < WORLDHEIGHT; k++) {
+					if (cubeAttribute[i][j][k] == air) {
+						continue;
+					}
+					//glm::mat3 modelAdjust = glm::mat3(transpose(inverse(model)));
+					//glUniformMatrix4fv(modelAdjustLoc, 1, GL_FALSE, glm::value_ptr(modelAdjust));
 					if (cubeAttribute[i][j][k] == soil) {
+						glBindVertexArray(soilVAO);
 						glm::mat4 model;
 						model = glm::translate(model, glm::vec3((float)i*CUBESIZE * 2, (float)k * CUBESIZE * 2, (float)j*CUBESIZE * 2));
-						//glm::mat3 modelAdjust = glm::mat3(transpose(inverse(model)));
 						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-						//glUniformMatrix4fv(modelAdjustLoc, 1, GL_FALSE, glm::value_ptr(modelAdjust));
 						glDrawArrays(GL_TRIANGLES, 0, 36);
+						glBindVertexArray(0);
+					}
+					else if (cubeAttribute[i][j][k] == stone) {
+						glBindVertexArray(stoneVAO);
+						glm::mat4 model;
+						model = glm::translate(model, glm::vec3((float)i*CUBESIZE * 2, (float)k * CUBESIZE * 2, (float)j*CUBESIZE * 2));
+						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+						glDrawArrays(GL_TRIANGLES, 0, 36);
+						glBindVertexArray(0);
 					}
 				}
 			}
 		}
 
-		glBindVertexArray(0);
         // Swap the buffers
         glfwSwapBuffers(window);
     }
     // Properly de-allocate all resources once they've outlived their purpose
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
+	glDeleteVertexArrays(1, &soilVAO);
+	glDeleteBuffers(1, &soilVBO);
+	glDeleteVertexArrays(1, &stoneVAO);
+	glDeleteBuffers(1, &stoneVBO);
 	glfwTerminate();
 	return 0;
 }
