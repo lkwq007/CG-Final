@@ -32,7 +32,17 @@ enum CubeType{
 	grass,
 	stone
 };
-
+bool canMoveIn(CubeType type)
+{
+	switch (type)
+	{
+	case air:
+	case grass:
+		return true;
+	default:
+		return false;
+	}
+}
 CubeType cubeAttribute[WORLDWIDTH][WORLDLENGTH][WORLDHEIGHT];
 glm::vec3 lightPos = glm::vec3(LIGHTPOSX * CUBESIZE * 2, LIGHTPOSY * CUBESIZE * 2, LIGHTPOSZ * CUBESIZE * 2);
 GLfloat cubeVertices[] = {

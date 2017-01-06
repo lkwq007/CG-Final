@@ -10,9 +10,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 // custom
+#include "CubeData.h"
 #include "Camera.h"
 #include "Shader.h"
-#include "CubeData.h"
 
 #include <iostream>
 
@@ -26,7 +26,7 @@ void Do_Movement();
 void Init();
 
 // Camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(20.0f, 8.0f, 20.0f));
 bool keys[1024];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
@@ -206,6 +206,9 @@ void Do_Movement(){
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (keys[GLFW_KEY_D])
 		camera.ProcessKeyboard(RIGHT, deltaTime);
+	if (keys[GLFW_KEY_SPACE])
+		camera.ProcessKeyboard(JUMP, deltaTime);
+	camera.ProcessFloated(deltaTime);
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode){
