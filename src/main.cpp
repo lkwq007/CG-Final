@@ -105,6 +105,23 @@ int main(){
 	glEnableVertexAttribArray(2);
 	glBindVertexArray(0);
 
+	GLuint grassVBO, grassVAO;
+	glGenVertexArrays(1, &grassVAO);
+	glGenBuffers(1, &grassVBO);
+	glBindVertexArray(grassVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(grassCubeVertices), grassCubeVertices, GL_STATIC_DRAW);
+	// 位置属性
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	// 法线
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	// 纹理
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
+	glBindVertexArray(0);
+
 	// 加载纹理
 	GLuint cubeTexture;
 	glGenTextures(1, &cubeTexture);
@@ -125,7 +142,7 @@ int main(){
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 		//fps
-		//cout << 1 / deltaTime << endl;
+		cout << 1 / deltaTime << endl;
 		// Check and call events
 		glfwPollEvents();
 		Do_Movement();
@@ -162,20 +179,24 @@ int main(){
 					if (cubeAttribute[i][j][k] == air) {
 						continue;
 					}
+					glm::mat4 model;
+					model = glm::translate(model, glm::vec3((float)i*CUBESIZE * 2, (float)k * CUBESIZE * 2, (float)j*CUBESIZE * 2));
 					//glm::mat3 modelAdjust = glm::mat3(transpose(inverse(model)));
 					//glUniformMatrix4fv(modelAdjustLoc, 1, GL_FALSE, glm::value_ptr(modelAdjust));
 					if (cubeAttribute[i][j][k] == soil) {
 						glBindVertexArray(soilVAO);
-						glm::mat4 model;
-						model = glm::translate(model, glm::vec3((float)i*CUBESIZE * 2, (float)k * CUBESIZE * 2, (float)j*CUBESIZE * 2));
 						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 						glDrawArrays(GL_TRIANGLES, 0, 36);
 						glBindVertexArray(0);
 					}
 					else if (cubeAttribute[i][j][k] == stone) {
 						glBindVertexArray(stoneVAO);
-						glm::mat4 model;
-						model = glm::translate(model, glm::vec3((float)i*CUBESIZE * 2, (float)k * CUBESIZE * 2, (float)j*CUBESIZE * 2));
+						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+						glDrawArrays(GL_TRIANGLES, 0, 36);
+						glBindVertexArray(0);
+					}
+					else if (cubeAttribute[i][j][k] == grass) {
+						glBindVertexArray(grassVAO);
 						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 						glDrawArrays(GL_TRIANGLES, 0, 36);
 						glBindVertexArray(0);
