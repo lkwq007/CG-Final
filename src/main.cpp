@@ -1,5 +1,5 @@
 // custom DEBUG flag
-#define CAMERAFREE
+ #define CAMERAFREE
 // GLEW
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -60,7 +60,7 @@ int main(){
 	// Set the required callback functions
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
-	//glfwSetScrollCallback(window, scroll_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 	
 	// Options
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -171,7 +171,7 @@ int main(){
 		glm::mat4 view;
         view = camera.GetViewMatrix();
         glm::mat4 projection;	
-        projection = glm::perspective(camera.Zoom, (float)screenWidth/(float)screenHeight, 0.1f, 1000.0f);
+        projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth/(float)screenHeight, 0.1f, 1000.0f);
 
         // Get the uniform locations
         GLint modelLoc = glGetUniformLocation(cubeShader.Program, "model");
