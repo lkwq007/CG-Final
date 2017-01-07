@@ -1,5 +1,5 @@
 // custom DEBUG flag
- #define CAMERAFREE
+#define CAMERAFREE
 // GLEW
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -22,6 +22,11 @@
 #endif // CAMERAFREE
 
 #include <iostream>
+#include <math.h>
+
+#ifndef  M_PI
+#define M_PI (acos(-1.0))
+#endif
 
 int screenWidth = 800, screenHeight = 600;
 
@@ -40,6 +45,10 @@ bool firstMouse = true;
 
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
+/*GLint soilIndex;
+glm::mat4 soilMat[10000];
+glm::vec3 stoneOffset[10000];
+glm::vec3 grassOffset[10000];*/
 
 // The MAIN function, from here we start our application and run our Game loop
 int main(){
@@ -73,7 +82,7 @@ int main(){
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-
+	//glEnable(GL_FRAMEBUFFER_SRGB);
 
 	// Shader
 	Shader cubeShader("cube.vs", "cube.frag");
@@ -183,13 +192,14 @@ int main(){
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 		glUniform1f(glGetUniformLocation(cubeShader.Program, "material.shininess"), 32.0f);
 
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.direction"), 0.2f, -1.0f, 0.3f);
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.ambient"), 0.05f, 0.05f, 0.05f);
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.diffuse"), 0.4f, 0.4f, 0.4f);
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.specular"), 0.5f, 0.5f, 0.5f);
-
+		//soilIndex = 0;
 		for (int i = 0; i < WORLDWIDTH; i++) {
 			for (int j = 0; j < WORLDLENGTH; j++) {
 				for (int k = 0; k < WORLDHEIGHT; k++) {
@@ -201,11 +211,15 @@ int main(){
 					//glm::mat3 modelAdjust = glm::mat3(transpose(inverse(model)));
 					//glUniformMatrix4fv(modelAdjustLoc, 1, GL_FALSE, glm::value_ptr(modelAdjust));
 					if (cubeAttribute[i][j][k] == soil) {
+						//soilMat[soilIndex++] = model;
+						
 						glBindVertexArray(soilVAO);
 						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 						glDrawArrays(GL_TRIANGLES, 0, 36);
 						glBindVertexArray(0);
+						
 					}
+					
 					else if (cubeAttribute[i][j][k] == stone) {
 						glBindVertexArray(stoneVAO);
 						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -218,14 +232,25 @@ int main(){
 						glDrawArrays(GL_TRIANGLES, 0, 36);
 						glBindVertexArray(0);
 					}
+					
 				}
 			}
 		}
+
 		modelShader.Use();
 		glm::mat4 stevePosModel;
-		stevePosModel = glm::translate(stevePosModel, glm::vec3(-2.0f, -CUBESIZE - 0.032011f*0.225f, -1.0f));
+		glUniform3f(glGetUniformLocation(modelShader.Program, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
+		//stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f, -CUBESIZE - 0.032011f*0.225f, 0.0f));
+		
+
+		cout << camera.Position.x <<" ";
+		cout << camera.Position.y << " ";
+		cout << camera.Position.z << "\n";
+		//stevePosModel = glm::translate(stevePosModel, glm::vec3(camera.Position.x+3.06801f, camera.Position.y- 0.645863f, camera.Position.z-0.03818f));
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(-1.0f, -CUBESIZE, -1.0f));
 		stevePosModel = glm::scale(stevePosModel, glm::vec3(0.225f, 0.225f, 0.225f));
-		stevePosModel = glm::translate(stevePosModel, glm::vec3(0.12f, 0.0f, 0.0f));
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f,- 0.032011f, 0.0f));
+		stevePosModel = glm::rotate(stevePosModel,glm::radians(-camera.Yaw+90.0f),glm::vec3(0.0f,1.0f,0.0f));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(stevePosModel));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
