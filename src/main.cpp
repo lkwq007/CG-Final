@@ -76,7 +76,7 @@ int main(){
 
 
 	// Shader
-	Shader cubeShader("VShader", "FShader");
+	Shader cubeShader("cube.vs", "cube.frag");
 	Shader modelShader("model.vs", "model.frag");
 	Model steveModel("model/steve.obj");
 	GLuint soilVBO, soilVAO;
