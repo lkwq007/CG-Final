@@ -163,7 +163,10 @@ int main(){
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, cubeTexture);
-		glUniform1i(glGetUniformLocation(cubeShader.Program, "cubeTexture"), 0);
+		glUniform1i(glGetUniformLocation(cubeShader.Program, "material.diffuse"), 0);
+		//临时采用相同的光照贴图
+		glUniform1i(glGetUniformLocation(cubeShader.Program, "material.specular"), 0);
+
 
 		glm::mat4 view;
         view = camera.GetViewMatrix();
@@ -172,15 +175,21 @@ int main(){
 
         // Get the uniform locations
         GLint modelLoc = glGetUniformLocation(cubeShader.Program, "model");
-		GLint modelAdjustLoc = glGetUniformLocation(cubeShader.Program, "modelAdjust");
+		//GLint modelAdjustLoc = glGetUniformLocation(cubeShader.Program, "modelAdjust");
 		GLint viewLoc = glGetUniformLocation(cubeShader.Program, "view");
         GLint projLoc = glGetUniformLocation(cubeShader.Program, "projection"); 
-		GLint lightPosLoc = glGetUniformLocation(cubeShader.Program, "lightPos");
+
         // Pass the matrices to the shader
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
-		
+
+		glUniform1f(glGetUniformLocation(cubeShader.Program, "material.shininess"), 32.0f);
+
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.direction"), 0.2f, -1.0f, 0.3f);
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.ambient"), 0.05f, 0.05f, 0.05f);
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.diffuse"), 0.4f, 0.4f, 0.4f);
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.specular"), 0.5f, 0.5f, 0.5f);
+
 		for (int i = 0; i < WORLDWIDTH; i++) {
 			for (int j = 0; j < WORLDLENGTH; j++) {
 				for (int k = 0; k < WORLDHEIGHT; k++) {
@@ -220,7 +229,6 @@ int main(){
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(stevePosModel));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-		glUniform3f(glGetUniformLocation(modelShader.Program, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 		steveModel.Draw(modelShader);
 		cubeShader.Use();
 		glm::mat4 tempModel;
