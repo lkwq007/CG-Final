@@ -33,7 +33,7 @@ void Do_Movement();
 void Init();
 
 // Camera
-Camera camera(glm::vec3(20.0f, 7.0f, 20.0f));
+Camera camera(glm::vec3(-1.0f, 0.0f, -1.0f));
 bool keys[1024];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
@@ -214,12 +214,27 @@ int main(){
 		}
 		modelShader.Use();
 		glm::mat4 stevePosModel;
-		stevePosModel = glm::translate(stevePosModel, glm::vec3(5.0f, 5.0f, 8.0f));
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(-2.0f, -CUBESIZE - 0.032011f*0.225f, -1.0f));
+		stevePosModel = glm::scale(stevePosModel, glm::vec3(0.225f, 0.225f, 0.225f));
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(0.12f, 0.0f, 0.0f));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(stevePosModel));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 		glUniform3f(glGetUniformLocation(modelShader.Program, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 		steveModel.Draw(modelShader);
+		cubeShader.Use();
+		glm::mat4 tempModel;
+		tempModel = glm::translate(tempModel, glm::vec3(-2.0f, 0.0f, -1.0f));
+		GLfloat test=1.0f;
+
+		tempModel = glm::scale(tempModel, glm::vec3(1.0f, test, 1.0f));
+		//tempModel = glm::translate(tempModel, glm::vec3(0.0f, CUBESIZE/2, 0.0f));
+		glUniformMatrix4fv(glGetUniformLocation(cubeShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(tempModel));
+		glUniformMatrix4fv(glGetUniformLocation(cubeShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(cubeShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		glBindVertexArray(grassVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
 
         // Swap the buffers
         glfwSwapBuffers(window);
