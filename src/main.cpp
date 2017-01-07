@@ -1,5 +1,5 @@
 // custom DEBUG flag
-#define CAMERAFREE
+//#define CAMERAFREE
 // GLEW
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -21,6 +21,9 @@
 #include "Camera.h"
 #endif // CAMERAFREE
 
+#include "Interaction.h"
+#include "Quad.h"
+
 #include <iostream>
 #include <math.h>
 
@@ -28,18 +31,21 @@
 #define M_PI (acos(-1.0))
 #endif
 
-int screenWidth = 800, screenHeight = 600;
+const GLint screenWidth = 800, screenHeight = 600;
 
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void Do_Movement();
+void Fetch_Around();
 void Init();
 
 // Camera
-Camera camera(glm::vec3(-1.0f, 0.0f, -1.0f));
+Camera camera(glm::vec3(20.0f, 7.0f, 20.0f));
 bool keys[1024];
+bool mouse[8];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
 
@@ -70,7 +76,8 @@ int main(){
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
-	
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
+
 	// Options
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -87,6 +94,8 @@ int main(){
 	// Shader
 	Shader cubeShader("cube.vs", "cube.frag");
 	Shader modelShader("model.vs", "model.frag");
+	Shader hdrShader("hdr.vs", "hdr.frag");
+
 	Model steveModel("model/steve.obj");
 	GLuint soilVBO, soilVAO;
 	glGenVertexArrays(1, &soilVAO);
@@ -147,12 +156,37 @@ int main(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	unsigned char* image = SOIL_load_image("texture.png", &screenWidth, &screenHeight, 0, SOIL_LOAD_RGB);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screenWidth, screenHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	GLint imageWidth, imageHeight;
+	unsigned char* image = SOIL_load_image("texture.png", &imageWidth, &imageHeight, 0, SOIL_LOAD_RGB);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, imageWidth, imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	SOIL_free_image_data(image);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
+	// HDR
+	GLuint hdrFBO;
+	glGenFramebuffers(1, &hdrFBO);
+	// - Create floating point color buffer
+	GLuint colorBuffer;
+	glGenTextures(1, &colorBuffer);
+	glBindTexture(GL_TEXTURE_2D, colorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// - Create depth buffer (renderbuffer)
+	GLuint rboDepth;
+	glGenRenderbuffers(1, &rboDepth);
+	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, screenWidth, screenHeight);
+	// - Attach buffers
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorBuffer, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Framebuffer not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
 	while (!glfwWindowShouldClose(window)){
 		// Set frame time
 		GLfloat currentFrame = glfwGetTime();
@@ -163,9 +197,11 @@ int main(){
 		// Check and call events
 		glfwPollEvents();
 		Do_Movement();
-
+		Fetch_Around();
+		LBA_handle();
+		// °ó¶¨ HDR Ö¡»º³å
+		glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 		// Clear the colorbuffer
-		glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// draw
 		cubeShader.Use();
@@ -242,10 +278,11 @@ int main(){
 		glUniform3f(glGetUniformLocation(modelShader.Program, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 		//stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f, -CUBESIZE - 0.032011f*0.225f, 0.0f));
 		
-
+		/*
 		cout << camera.Position.x <<" ";
 		cout << camera.Position.y << " ";
 		cout << camera.Position.z << "\n";
+		*/
 		//stevePosModel = glm::translate(stevePosModel, glm::vec3(camera.Position.x+3.06801f, camera.Position.y- 0.645863f, camera.Position.z-0.03818f));
 		stevePosModel = glm::translate(stevePosModel, glm::vec3(-1.0f, -CUBESIZE, -1.0f));
 		stevePosModel = glm::scale(stevePosModel, glm::vec3(0.225f, 0.225f, 0.225f));
@@ -269,7 +306,17 @@ int main(){
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		hdrShader.Use();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, colorBuffer);
+		glUniform1i(glGetUniformLocation(hdrShader.Program, "hdrBuffer"), 0);
+		glUniform1f(glGetUniformLocation(hdrShader.Program, "exposure"), 1.0f);
+		RenderQuad();
         // Swap the buffers
+
         glfwSwapBuffers(window);
     }
     // Properly de-allocate all resources once they've outlived their purpose
@@ -279,6 +326,11 @@ int main(){
 	glDeleteBuffers(1, &stoneVBO);
 	glfwTerminate();
 	return 0;
+}
+
+void Fetch_Around()
+{
+	return;
 }
 
 void Do_Movement(){
@@ -301,6 +353,17 @@ void Do_Movement(){
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode){
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
+	if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
+	{
+		if (camera.Mode == NORMAL_MODE)
+		{
+			camera.Mode = GOD_MODE;
+		}
+		else
+		{
+			camera.Mode = NORMAL_MODE;
+		}
+	}
 	if (key >= 0 && key < 1024){
 		if (action == GLFW_PRESS)
 			keys[key] = true;
@@ -325,6 +388,18 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos){
 	camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	if (action == GLFW_PRESS)
+	{
+		mouse[button] = true;
+	}
+	else
+	{
+		mouse[button] = false;
+	}
+}
+
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	camera.ProcessMouseScroll(yoffset);
@@ -332,4 +407,99 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void Init() {
 	initCubeAttribute();
+}
+
+
+void UpdateDynamicItem(CubeType item)
+{
+	return;
+}
+
+GLint touch_cube(GLint *x, GLint *y, GLint *z)
+{
+	glm::vec3 temp = camera.Position;
+	GLint i;
+	for (i = 1; i <= TOUCH_MAX; i++)
+	{
+		temp += camera.Front*TOUCH_STEP;
+		*x = temp.x / CUBESIZE / 2.0f;
+		*y = temp.y / CUBESIZE / 2.0f;
+		*z = temp.z / CUBESIZE / 2.0f;
+		if (!canMoveIn(cubeAttribute[*x][*z][*y]))
+		{
+			break;
+		}
+	}
+	if (i == TOUCH_MAX + 1)
+	{
+		return 0;
+	}
+	return i - 1;
+}
+
+void digged_cube(GLint x, GLint y, GLint z)
+{
+	UpdateDynamicItem(cubeAttribute[x][z][y]);
+	cubeAttribute[x][z][y] = air;
+	return;
+}
+
+void LBA_handle()
+{
+	GLint x, y, z;
+	GLint times;
+	glm::vec3 temp = camera.Position;
+	cout << left_button_state << " ";
+	cout << LBA_hold_time << " ";
+	switch (left_button_state)
+	{
+	case LBA_FREE:
+		if (mouse[0])
+		{
+			if (touch_cube(&x, &y, &z))
+			{
+				left_button_state = LBA_DIGGING;
+				last_x = x;
+				last_y = y;
+				last_z = z;
+			}
+		}
+		LBA_hold_time = 0.0f;
+		break;
+	case LBA_DIGGING:
+		if (!mouse[0])
+		{
+			left_button_state = LBA_FREE;
+			LBA_hold_time = 0.0f;
+		}
+		else if (touch_cube(&x, &y, &z))
+		{
+			if (last_x == x&&last_y == y&&last_z == z)
+			{
+				LBA_hold_time += deltaTime;
+				if (LBA_hold_time >= 1.0f)
+				{
+					digged_cube(x, y, z);
+					left_button_state = LBA_FREE;
+					LBA_hold_time = 0.0f;
+				}
+			}
+		}
+		break;
+	case LBA_PLACE:
+		times = touch_cube(&x, &y, &z);
+		if (times)
+		{
+			temp += times*TOUCH_STEP;
+			x = temp.x / CUBESIZE / 2.0f;
+			y = temp.y / CUBESIZE / 2.0f;
+			z = temp.z / CUBESIZE / 2.0f;
+			cubeAttribute[x][z][y] = active_item;
+		}
+		break;
+	default:
+		left_button_state = LBA_FREE;
+		LBA_hold_time = 0.0f;
+		break;
+	}
 }

@@ -42,6 +42,16 @@ bool canMoveIn(CubeType type)
 		return false;
 	}
 }
+bool canDig(CubeType type)
+{
+	switch (type)
+	{
+	case air:
+		return false;
+	default:
+		return true;
+	}
+}
 CubeType cubeAttribute[WORLDWIDTH][WORLDLENGTH][WORLDHEIGHT];
 glm::vec3 lightPos = glm::vec3(LIGHTPOSX * CUBESIZE * 2, LIGHTPOSY * CUBESIZE * 2, LIGHTPOSZ * CUBESIZE * 2);
 GLfloat cubeVertices[] = {

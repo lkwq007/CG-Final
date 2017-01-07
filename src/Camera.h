@@ -25,6 +25,17 @@ const GLfloat SENSITIVTY = 0.25f;
 const GLfloat ZOOM = 45.0f;
 const GLfloat GRAVITY = 2.0f;
 
+// camera box half size
+GLfloat cameraWith = CUBESIZE*0.8;
+GLfloat cameraTick = CUBESIZE*0.4;
+
+// camera mode
+enum Camera_Mode
+{
+	NORMAL_MODE,
+	GOD_MODE
+};
+
 bool onGround=false;
 GLfloat dropSpeed = 0.0f;
 
@@ -56,6 +67,7 @@ public:
 	GLfloat MovementSpeed;
 	GLfloat MouseSensitivity;
 	GLfloat Zoom;
+	Camera_Mode Mode;
 
 	// Constructor with vectors
 	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), GLfloat yaw = YAW, GLfloat pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVTY), Zoom(ZOOM)
@@ -64,6 +76,7 @@ public:
 		this->WorldUp = up;
 		this->Yaw = yaw;
 		this->Pitch = pitch;
+		this->Mode = NORMAL_MODE;
 		this->updateCameraVectors();
 	}
 	// Constructor with scalar values
@@ -73,6 +86,7 @@ public:
 		this->WorldUp = glm::vec3(upX, upY, upZ);
 		this->Yaw = yaw;
 		this->Pitch = pitch;
+		this->Mode = NORMAL_MODE;
 		this->updateCameraVectors();
 	}
 
@@ -84,6 +98,10 @@ public:
 
 	void ProcessFloated(GLfloat deltaTime)
 	{
+		if (this->Mode == GOD_MODE)
+		{
+			return;
+		}
 		int x, y, z, yUpdated,i;
 		GLfloat temp;
 		x = this->Position.x / CUBESIZE / 2.0f;
@@ -94,7 +112,7 @@ public:
 			onGround = true;
 			return;
 		}
-		cout << cubeAttribute[x][z][y-2]<< cubeAttribute[x][z][y-1]<< cubeAttribute[x][z][y]<<" ";
+		//cout << cubeAttribute[x][z][y-2]<< cubeAttribute[x][z][y-1]<< cubeAttribute[x][z][y]<<" ";
 		if (canMoveIn(cubeAttribute[x][z][y-2]))
 		{
 			onGround = false;
@@ -139,6 +157,18 @@ public:
 	void ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime)
 	{
 		GLfloat velocity = this->MovementSpeed * deltaTime;
+		if (this->Mode == GOD_MODE)
+		{
+			if (direction == FORWARD)
+				this->Position += this->Front * velocity;
+			if (direction == BACKWARD)
+				this->Position -= this->Front * velocity;
+			if (direction == LEFT)
+				this->Position -= this->Right * velocity;
+			if (direction == RIGHT)
+				this->Position += this->Right * velocity;
+			return;
+		}
 		if (onGround)
 		{
 			glm::vec3 prevPositon = this->Position;
@@ -184,6 +214,27 @@ public:
 
 		// Update Front, Right and Up Vectors using the updated Eular angles
 		this->updateCameraVectors();
+		glm::vec3 temp=this->Position;
+		GLint x, y, z,i;
+		for (i = 1; i <=50; i++)
+		{
+			temp += this->Front*CUBESIZE/5.0f;
+			x = temp.x / CUBESIZE / 2.0f;
+			y = temp.y / CUBESIZE / 2.0f;
+			z = temp.z / CUBESIZE / 2.0f;
+			if (!canMoveIn(cubeAttribute[x][z][y]))
+			{
+				break;
+			}
+		}
+		if (i == 51)
+		{
+			cout << "none ";
+		}
+		else
+		{
+			cout << cubeAttribute[x][z][y] << " ";
+		}
 	}
 
 	// Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
