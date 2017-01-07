@@ -31,6 +31,7 @@ GLfloat dropSpeed = 0.0f;
 bool collisionDetector(glm::vec3 position)
 {
 	int x, y, z;
+	bool result;
 	position = position / CUBESIZE/ 2.0f;
 	x = position.x;
 	y = position.y;
@@ -152,7 +153,9 @@ public:
 			this->Position.y = prevPositon.y;
 			if (direction == JUMP)
 			{
-				this->Position.y += velocity;
+				this->Position.y += CUBESIZE*3.0f;
+				this->Position.x += (this->Position.x - prevPositon.x) * 2;
+				this->Position.z += (this->Position.z - prevPositon.z) * 2;
 			}
 			if (collisionDetector(Position))
 			{

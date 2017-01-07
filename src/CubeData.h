@@ -37,7 +37,6 @@ bool canMoveIn(CubeType type)
 	switch (type)
 	{
 	case air:
-	case grass:
 		return true;
 	default:
 		return false;

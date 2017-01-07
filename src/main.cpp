@@ -1,3 +1,5 @@
+// custom DEBUG flag
+#define CAMERAFREE
 // GLEW
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -11,8 +13,13 @@
 #include <glm/gtc/type_ptr.hpp>
 // custom
 #include "CubeData.h"
-#include "Camera.h"
 #include "Shader.h"
+#include "Model.h"
+#ifdef CAMERAFREE
+#include "CameraFree.h"
+#else
+#include "Camera.h"
+#endif // CAMERAFREE
 
 #include <iostream>
 
@@ -26,7 +33,7 @@ void Do_Movement();
 void Init();
 
 // Camera
-Camera camera(glm::vec3(20.0f, 8.0f, 20.0f));
+Camera camera(glm::vec3(20.0f, 7.0f, 20.0f));
 bool keys[1024];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
@@ -70,7 +77,8 @@ int main(){
 
 	// Shader
 	Shader cubeShader("VShader", "FShader");
-
+	Shader modelShader("model.vs", "model.frag");
+	Model steveModel("model/steve.obj");
 	GLuint soilVBO, soilVAO;
 	glGenVertexArrays(1, &soilVAO);
 	glGenBuffers(1, &soilVBO);
@@ -142,7 +150,7 @@ int main(){
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 		//fps
-		cout << 1 / deltaTime << endl;
+		// cout << 1 / deltaTime << endl;
 		// Check and call events
 		glfwPollEvents();
 		Do_Movement();
@@ -204,6 +212,14 @@ int main(){
 				}
 			}
 		}
+		modelShader.Use();
+		glm::mat4 stevePosModel;
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(5.0f, 5.0f, 8.0f));
+		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(stevePosModel));
+		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		glUniform3f(glGetUniformLocation(modelShader.Program, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+		steveModel.Draw(modelShader);
 
         // Swap the buffers
         glfwSwapBuffers(window);
@@ -227,9 +243,11 @@ void Do_Movement(){
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (keys[GLFW_KEY_D])
 		camera.ProcessKeyboard(RIGHT, deltaTime);
+#ifndef CAMERAFREE
 	if (keys[GLFW_KEY_SPACE])
 		camera.ProcessKeyboard(JUMP, deltaTime);
 	camera.ProcessFloated(deltaTime);
+#endif // CAMERAFREE
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode){
