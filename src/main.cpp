@@ -350,6 +350,7 @@ void Do_Movement(){
 #endif // CAMERAFREE
 }
 
+GLfloat offsetC = 1.0f;
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode){
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
@@ -363,6 +364,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		{
 			camera.Mode = NORMAL_MODE;
 		}
+	}
+	if (key == GLFW_KEY_UP && action == GLFW_PRESS)
+	{
+		offsetC *= 1.5f;
+	}
+	if (key == GLFW_KEY_DOWN&& action == GLFW_PRESS)
+	{
+		offsetC *= 0.5f;
 	}
 	if (key >= 0 && key < 1024){
 		if (action == GLFW_PRESS)
@@ -418,6 +427,8 @@ void UpdateDynamicItem(CubeType item)
 GLint touch_cube(GLint *x, GLint *y, GLint *z)
 {
 	glm::vec3 temp = camera.Position;
+	temp += camera.Right*0.09375f;
+	cout << "offset" << offsetC << " ";
 	GLint i;
 	for (i = 1; i <= TOUCH_MAX; i++)
 	{
@@ -449,6 +460,7 @@ void LBA_handle()
 	GLint x, y, z;
 	GLint times;
 	glm::vec3 temp = camera.Position;
+	
 	cout << left_button_state << " ";
 	cout << LBA_hold_time << " ";
 	switch (left_button_state)

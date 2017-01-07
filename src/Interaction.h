@@ -7,8 +7,8 @@ enum LEFT_BUTTON_ACTION
 	LBA_ATTACK
 };
 
-const GLint TOUCH_MAX = 50;
-const GLfloat TOUCH_STEP = CUBESIZE / 5.0f;
+const GLint TOUCH_MAX = 100;
+const GLfloat TOUCH_STEP = CUBESIZE / 10.0f;
 
 LEFT_BUTTON_ACTION left_button_state=LBA_FREE;
 GLfloat LBA_hold_time = 0.0f;
