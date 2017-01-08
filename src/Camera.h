@@ -26,8 +26,10 @@ const GLfloat ZOOM = 45.0f;
 const GLfloat GRAVITY = 2.0f;
 
 // camera box half size
-GLfloat cameraWith = CUBESIZE*0.8;
-GLfloat cameraTick = CUBESIZE*0.4;
+GLfloat cameraHWidth = CUBESIZE*0.6;
+GLfloat cameraHTick = CUBESIZE*0.3;
+GLfloat cameraHeight = 1.65*CUBESIZE*2.0;
+GLfloat playerHeight = 1.8*CUBESIZE*2.0;
 
 // camera mode
 enum Camera_Mode
@@ -36,18 +38,61 @@ enum Camera_Mode
 	GOD_MODE
 };
 
-bool onGround=false;
+bool onGround = false;
+bool JUMPING = false;
+Camera_Movement jumpDir=FORWARD;
 GLfloat dropSpeed = 0.0f;
 
 bool collisionDetector(glm::vec3 position)
 {
 	int x, y, z;
-	bool result;
 	position = position / CUBESIZE/ 2.0f;
 	x = position.x;
 	y = position.y;
 	z = position.z;
 	return !(canMoveIn(cubeAttribute[x][z][y])&&canMoveIn(cubeAttribute[x][z][y - 1]));
+}
+
+bool sglCollDetr(glm::vec3 position)
+{
+	int x, y, z;
+	position = position / CUBESIZE / 2.0f;
+	x = position.x;
+	y = position.y;
+	z = position.z;
+	return !canMoveIn(cubeAttribute[x][z][y]);
+}
+
+bool canDoMove(glm::vec3 nextPos, glm::vec3 frontV, glm::vec3 rightV)
+{
+	nextPos.y -= cameraHeight;
+	if (sglCollDetr(nextPos + rightV) || sglCollDetr(nextPos - rightV) || sglCollDetr(nextPos + rightV - frontV) ||
+		sglCollDetr(nextPos - rightV - frontV))
+		return false;
+	nextPos.y += playerHeight*0.5f;
+	if (sglCollDetr(nextPos + rightV) || sglCollDetr(nextPos - rightV) || sglCollDetr(nextPos + rightV - frontV) ||
+		sglCollDetr(nextPos - rightV - frontV))
+		return false;
+	nextPos.y += playerHeight*0.5f;
+	if (sglCollDetr(nextPos + rightV) || sglCollDetr(nextPos - rightV) || sglCollDetr(nextPos + rightV - frontV) ||
+		sglCollDetr(nextPos - rightV - frontV))
+		return false;
+	return true;
+}
+
+glm::vec3 collisionCorrector(glm::vec3 curPos, glm::vec3 nextPos, glm::vec3 frontV,glm::vec3 rightV)
+{
+	frontV = cameraHTick*2.0f*frontV;
+	rightV = cameraHWidth*rightV;
+	for (GLint i = 0; i <= 5; i++)
+	{
+		if (canDoMove(nextPos, frontV, rightV))
+		{
+			return nextPos;
+		}
+		nextPos = curPos + (nextPos - curPos)*0.5f;
+	}
+	return curPos;
 }
 
 // An abstract camera class that processes input and calculates the corresponding Eular Angles, Vectors and Matrices for use in OpenGL
@@ -126,8 +171,8 @@ public:
 		
 		if (onGround == false)
 		{
+			temp = this->Position.y - dropSpeed*deltaTime- deltaTime*deltaTime*GRAVITY/2.0f;
 			dropSpeed += deltaTime*GRAVITY;
-			temp = this->Position.y - dropSpeed*deltaTime;
 			yUpdated = temp / CUBESIZE / 2.0f;
 			if (yUpdated < 1)
 			{
@@ -169,6 +214,48 @@ public:
 				this->Position += this->Right * velocity;
 			return;
 		}
+		glm::vec3 frontXZ = this->Front;
+		frontXZ.y = 0;
+		frontXZ = glm::normalize(frontXZ)*velocity;
+		glm::vec3 rightXZ = this->Right;
+		rightXZ.y = 0;
+		rightXZ = glm::normalize(rightXZ)*velocity;
+		glm::vec3 nextPosition;
+		if (JUMPING&&direction!=JUMP)
+		{
+			jumpDir = direction;
+			JUMPING = false;
+		}
+		if (onGround)//认为地面阻力无限大，不考虑动量
+		{
+			if (direction == FORWARD)
+			{
+				nextPosition = this->Position + frontXZ;
+			}
+			if (direction == BACKWARD)
+			{
+				nextPosition = this->Position - frontXZ;
+			}
+			if (direction == LEFT)
+			{
+				nextPosition = this->Position - rightXZ;
+			}
+			if (direction == RIGHT)
+			{
+				nextPosition = this->Position + rightXZ;
+			}
+			/*
+			if (direction == JUMP)
+			{
+				JUMPING = true;
+				onGround = false;
+				dropSpeed = -CUBESIZE*5.0f;
+			}
+			*/
+			this->Position=collisionCorrector(this->Position, nextPosition, frontXZ, rightXZ);
+		}
+		return;
+		/*
 		if (onGround)
 		{
 			glm::vec3 prevPositon = this->Position;
@@ -192,6 +279,7 @@ public:
 				this->Position = prevPositon;
 			}
 		}
+		*/
 	}
 
 	// Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
@@ -214,27 +302,6 @@ public:
 
 		// Update Front, Right and Up Vectors using the updated Eular angles
 		this->updateCameraVectors();
-		glm::vec3 temp=this->Position;
-		GLint x, y, z,i;
-		for (i = 1; i <=50; i++)
-		{
-			temp += this->Front*CUBESIZE/5.0f;
-			x = temp.x / CUBESIZE / 2.0f;
-			y = temp.y / CUBESIZE / 2.0f;
-			z = temp.z / CUBESIZE / 2.0f;
-			if (!canMoveIn(cubeAttribute[x][z][y]))
-			{
-				break;
-			}
-		}
-		if (i == 51)
-		{
-			cout << "none ";
-		}
-		else
-		{
-			cout << cubeAttribute[x][z][y] << " ";
-		}
 	}
 
 	// Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
