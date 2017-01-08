@@ -150,6 +150,40 @@ int main(){
 	glEnableVertexAttribArray(2);
 	glBindVertexArray(0);
 
+	GLuint boleVBO, boleVAO;
+	glGenVertexArrays(1, &boleVAO);
+	glGenBuffers(1, &boleVBO);
+	glBindVertexArray(boleVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, boleVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(boleCubeVertices), boleCubeVertices, GL_STATIC_DRAW);
+	// 位置属性
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	// 法线
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	// 纹理
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
+	glBindVertexArray(0);
+
+	GLuint leafVBO, leafVAO;
+	glGenVertexArrays(1, &leafVAO);
+	glGenBuffers(1, &leafVBO);
+	glBindVertexArray(leafVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, leafVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(leafCubeVertices), leafCubeVertices, GL_STATIC_DRAW);
+	// 位置属性
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	// 法线
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	// 纹理
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
+	glBindVertexArray(0);
+
 	// 天空盒 VAO
 	GLuint skyboxVAO, skyboxVBO;
 	glGenVertexArrays(1, &skyboxVAO);
@@ -292,14 +326,12 @@ int main(){
 					//glUniformMatrix4fv(modelAdjustLoc, 1, GL_FALSE, glm::value_ptr(modelAdjust));
 					if (cubeAttribute[i][j][k] == soil) {
 						//soilMat[soilIndex++] = model;
-						
 						glBindVertexArray(soilVAO);
 						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 						glDrawArrays(GL_TRIANGLES, 0, 36);
 						glBindVertexArray(0);
 						
 					}
-					
 					else if (cubeAttribute[i][j][k] == stone) {
 						glBindVertexArray(stoneVAO);
 						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -312,7 +344,18 @@ int main(){
 						glDrawArrays(GL_TRIANGLES, 0, 36);
 						glBindVertexArray(0);
 					}
-					
+					else if (cubeAttribute[i][j][k] == bole) {
+						glBindVertexArray(boleVAO);
+						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+						glDrawArrays(GL_TRIANGLES, 0, 36);
+						glBindVertexArray(0);
+					}
+					else if (cubeAttribute[i][j][k] == leaf) {
+						glBindVertexArray(leafVAO);
+						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+						glDrawArrays(GL_TRIANGLES, 0, 36);
+						glBindVertexArray(0);
+					}
 				}
 			}
 		}

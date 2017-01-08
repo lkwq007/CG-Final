@@ -23,6 +23,7 @@ using namespace std;
 #define LIGHTPOSX	50
 #define LIGHTPOSY	50
 #define LIGHTPOSZ	50
+#define TREENUM		64
 
 #define MAX(x,y)	((x<y)?y:x)
 
@@ -30,7 +31,9 @@ enum CubeType{
 	air,
 	soil,
 	grass,
-	stone
+	stone,
+	bole,
+	leaf
 };
 bool canMoveIn(CubeType type)
 {
@@ -147,6 +150,9 @@ GLfloat skyboxVertices[] = {
 GLfloat soilCubeVertices[sizeof(cubeVertices) / sizeof(GLfloat)];
 GLfloat stoneCubeVertices[sizeof(cubeVertices) / sizeof(GLfloat)];
 GLfloat grassCubeVertices[sizeof(cubeVertices) / sizeof(GLfloat)];
+GLfloat boleCubeVertices[TREENUM * 8 * 10];
+GLfloat leafCubeVertices[TREENUM * 8 * 10 * 50];
+
 //glm::vec3 cubePositions[WORLDWIDTH][WORLDLENGTH][WORLDHEIGHT];
 //int verticeNumber = 0;
 //GLfloat allCubeVertices[WORLDWIDTH * WORLDLENGTH * WORLDHEIGHT * 36 * 4];
@@ -164,12 +170,40 @@ void averageFilter(int altitudeRandom[WORLDWIDTH + FILTERSIZE - 1][WORLDLENGTH +
 	}
 	return;
 }
+void genLeaf(int i, int j, int attribute, int r, bool first) {
+	if (r == 0) {
+		return;
+	}
+	if (!first && !(cubeAttribute[i][j][attribute] == leaf || cubeAttribute[i][j][attribute] == air)) {
+		return;
+	}
+	if (!first) {
+		cubeAttribute[i][j][attribute] = leaf;
+	}
+	genLeaf(i + 1, j, attribute, r - 1, false);
+	genLeaf(i - 1, j, attribute, r - 1, false);
+	genLeaf(i, j + 1, attribute, r - 1, false);
+	genLeaf(i, j - 1, attribute, r - 1, false);
+	return;
+}
+int genBole(int i, int j, int attribute, float probability, int treeHeight) {
+	if (rand() % 100 < probability * 100 && probability > 0.03) {
+		cubeAttribute[i][j][attribute] = bole;
+	}
+	else {
+		return treeHeight;
+	}
+	return genBole(i, j, attribute + 1, probability * 0.8, treeHeight + 1);
+}
 
 void initCubeAttribute(void) {
 	int altitudeRandom[WORLDWIDTH + FILTERSIZE - 1][WORLDLENGTH + FILTERSIZE - 1];
 	int altitudeAverage[WORLDWIDTH][WORLDLENGTH];
+	int treePostion[TREENUM];
 	memset(cubeAttribute, air, sizeof(cubeAttribute));
 	srand(time(NULL));
+
+	// 生成位置
 	for (int i = 0; i < WORLDWIDTH + FILTERSIZE - 1; i++) {
 		for (int j = 0; j < WORLDLENGTH + FILTERSIZE - 1; j++) {
 			if (i % ((FILTERSIZE - 1) / 2) && j % ((FILTERSIZE - 1) / 2)) {
@@ -177,6 +211,17 @@ void initCubeAttribute(void) {
 			}
 			else {
 				altitudeRandom[i][j] = WORLDHEIGHT / 2;
+			}
+		}
+	}
+	for (int i = 0; i < TREENUM; i++) {// 树的位置，用一个int表示
+		treePostion[i] = (rand() % WORLDWIDTH) * WORLDLENGTH + rand() % WORLDLENGTH;
+		for (int j = 0; j < i; j++) {
+			if (treePostion[i] == treePostion[j] + 1 - WORLDLENGTH || treePostion[i] == treePostion[j] - WORLDLENGTH || treePostion[i] == treePostion[j] - 1 - WORLDLENGTH
+				|| treePostion[i] == treePostion[j] + 1 || treePostion[i] == treePostion[j] || treePostion[i] == treePostion[j] - 1
+				|| treePostion[i] == treePostion[j] + 1 + WORLDLENGTH || treePostion[i] == treePostion[j] + WORLDLENGTH || treePostion[i] == treePostion[j] - 1 + WORLDLENGTH) {
+				i--;
+				break;
 			}
 		}
 	}
@@ -193,6 +238,31 @@ void initCubeAttribute(void) {
 			cubeAttribute[i][j][altitudeAverage[i][j] - 1] = grass;
 		}
 	}
+	for (int i = 0; i < TREENUM; i++) {
+		int x, y;
+		x = treePostion[i] / WORLDLENGTH;
+		y = treePostion[i] % WORLDLENGTH;
+		if (x >= WORLDWIDTH || y >= WORLDLENGTH) {
+			continue;
+		}
+		int attribute = altitudeAverage[x][y];
+		cubeAttribute[x][y][attribute] = bole;
+		cubeAttribute[x][y][attribute + 1] = bole;
+		cubeAttribute[x][y][attribute + 2] = bole;
+		cubeAttribute[x][y][attribute + 3] = bole;
+		int treeHeight = genBole(x, y, attribute + 4, 1 - 0.0001, 3);
+		for (int j = 2; j <= treeHeight; j++) {
+			if (treeHeight - 2 < 4) {
+				genLeaf(x, y, attribute + j, treeHeight - j + 1, true);
+			}
+			else {
+				genLeaf(x, y, attribute + j, ((treeHeight - j) * 2 + 0.5) / (treeHeight - 2) + 2, true);
+			}
+		}
+		cubeAttribute[x][y][attribute + treeHeight] = leaf;
+	}
+
+	// 生成顶点
 	//soil
 	memcpy(soilCubeVertices, cubeVertices, sizeof(cubeVertices));
 	for (int l = 0; l < 36; l++) {
@@ -229,5 +299,21 @@ void initCubeAttribute(void) {
 		grassCubeVertices[l * 8 + 6] += 0;//(5 * 16 + 3) * 1.0 / 256;
 		grassCubeVertices[l * 8 + 7] *= 1.0 / 16 / 16 * 12;
 		grassCubeVertices[l * 8 + 7] += (13 * 16 + 3) * 1.0 / 256;
+	}
+	//tree leave
+	memcpy(leafCubeVertices, cubeVertices, sizeof(cubeVertices));
+	for (int l = 0; l < 36; l++) {
+		leafCubeVertices[l * 8 + 6] *= 1.0 / 16 / 16 * 12;
+		leafCubeVertices[l * 8 + 6] += (14 * 16 + 3) * 1.0 / 256;
+		leafCubeVertices[l * 8 + 7] *= 1.0 / 16 / 16 * 12;
+		leafCubeVertices[l * 8 + 7] += (15 * 16 + 3) * 1.0 / 256;
+	}
+	//tree bole
+	memcpy(boleCubeVertices, cubeVertices, sizeof(cubeVertices));
+	for (int l = 0; l < 36; l++) {
+		boleCubeVertices[l * 8 + 6] *= 1.0 / 16 / 16 * 12;
+		boleCubeVertices[l * 8 + 6] += (4 * 16 + 3) * 1.0 / 256;
+		boleCubeVertices[l * 8 + 7] *= 1.0 / 16 / 16 * 12;
+		boleCubeVertices[l * 8 + 7] += (14 * 16 + 3) * 1.0 / 256;
 	}
 }
