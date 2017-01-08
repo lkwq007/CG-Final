@@ -242,7 +242,7 @@ void initCubeAttribute(void) {
 		int x, y;
 		x = treePostion[i] / WORLDLENGTH;
 		y = treePostion[i] % WORLDLENGTH;
-		if (x >= WORLDWIDTH || y >= WORLDLENGTH) {
+		if (x + 3 >= WORLDWIDTH || y + 3 >= WORLDLENGTH || x - 3 < 0 || y - 3 < 0){
 			continue;
 		}
 		int attribute = altitudeAverage[x][y];
