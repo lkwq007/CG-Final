@@ -1,5 +1,3 @@
-// custom DEBUG flag
-//#define CAMERAFREE
 // GLEW
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -15,11 +13,9 @@
 #include "CubeData.h"
 #include "Shader.h"
 #include "Model.h"
-#ifdef CAMERAFREE
-#include "CameraFree.h"
-#else
+
 #include "Camera.h"
-#endif // CAMERAFREE
+
 
 #include "Interaction.h"
 #include "Quad.h"
@@ -430,11 +426,9 @@ void Do_Movement(){
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (keys[GLFW_KEY_D])
 		camera.ProcessKeyboard(RIGHT, deltaTime);
-#ifndef CAMERAFREE
 	if (keys[GLFW_KEY_SPACE])
 		camera.ProcessKeyboard(JUMP, deltaTime);
 	camera.ProcessFloated(deltaTime);
-#endif // CAMERAFREE
 }
 
 GLfloat offsetC = 1.0f;

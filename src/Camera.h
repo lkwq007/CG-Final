@@ -23,11 +23,11 @@ const GLfloat PITCH = 0.0f;
 const GLfloat SPEED = 1.0f;
 const GLfloat SENSITIVTY = 0.25f;
 const GLfloat ZOOM = 45.0f;
-const GLfloat GRAVITY = 2.0f;
+const GLfloat GRAVITY = CUBESIZE*6.4f;
 
 // camera box half size
-GLfloat cameraHWidth = CUBESIZE*0.6;
-GLfloat cameraHTick = CUBESIZE*0.3;
+GLfloat cameraHWidth = CUBESIZE*0.4;
+GLfloat cameraHTick = CUBESIZE*0.2;
 GLfloat cameraHeight = 1.65*CUBESIZE*2.0;
 GLfloat playerHeight = 1.8*CUBESIZE*2.0;
 
@@ -41,6 +41,7 @@ enum Camera_Mode
 bool onGround = false;
 bool JUMPING = false;
 Camera_Movement jumpDir=FORWARD;
+Camera_Movement lastDir=FORWARD;
 GLfloat dropSpeed = 0.0f;
 
 bool collisionDetector(glm::vec3 position)
@@ -66,15 +67,15 @@ bool sglCollDetr(glm::vec3 position)
 bool canDoMove(glm::vec3 nextPos, glm::vec3 frontV, glm::vec3 rightV)
 {
 	nextPos.y -= cameraHeight;
-	if (sglCollDetr(nextPos + rightV) || sglCollDetr(nextPos - rightV) || sglCollDetr(nextPos + rightV - frontV) ||
+	if (sglCollDetr(nextPos + rightV+frontV) || sglCollDetr(nextPos - rightV + frontV) || sglCollDetr(nextPos + rightV - frontV) ||
 		sglCollDetr(nextPos - rightV - frontV))
 		return false;
 	nextPos.y += playerHeight*0.5f;
-	if (sglCollDetr(nextPos + rightV) || sglCollDetr(nextPos - rightV) || sglCollDetr(nextPos + rightV - frontV) ||
+	if (sglCollDetr(nextPos + rightV + frontV) || sglCollDetr(nextPos - rightV + frontV) || sglCollDetr(nextPos + rightV - frontV) ||
 		sglCollDetr(nextPos - rightV - frontV))
 		return false;
 	nextPos.y += playerHeight*0.5f;
-	if (sglCollDetr(nextPos + rightV) || sglCollDetr(nextPos - rightV) || sglCollDetr(nextPos + rightV - frontV) ||
+	if (sglCollDetr(nextPos + rightV + frontV) || sglCollDetr(nextPos - rightV + frontV) || sglCollDetr(nextPos + rightV - frontV) ||
 		sglCollDetr(nextPos - rightV - frontV))
 		return false;
 	return true;
@@ -82,7 +83,7 @@ bool canDoMove(glm::vec3 nextPos, glm::vec3 frontV, glm::vec3 rightV)
 
 glm::vec3 collisionCorrector(glm::vec3 curPos, glm::vec3 nextPos, glm::vec3 frontV,glm::vec3 rightV)
 {
-	frontV = cameraHTick*2.0f*frontV;
+	frontV = cameraHTick*frontV;
 	rightV = cameraHWidth*rightV;
 	for (GLint i = 0; i <= 5; i++)
 	{
@@ -94,7 +95,7 @@ glm::vec3 collisionCorrector(glm::vec3 curPos, glm::vec3 nextPos, glm::vec3 fron
 	}
 	return curPos;
 }
-
+GLint minY;
 // An abstract camera class that processes input and calculates the corresponding Eular Angles, Vectors and Matrices for use in OpenGL
 class Camera
 {
@@ -140,23 +141,32 @@ public:
 	{
 		return glm::lookAt(this->Position, this->Position + this->Front, this->Up);
 	}
-
+	GLint floatedTime;
 	void ProcessFloated(GLfloat deltaTime)
 	{
 		if (this->Mode == GOD_MODE)
 		{
 			return;
 		}
+		glm::vec3 frontXZ = this->Front;
+		frontXZ.y = 0;
+		frontXZ = glm::normalize(frontXZ);
+		glm::vec3 rightXZ = this->Right;
+		rightXZ.y = 0;
+		rightXZ = glm::normalize(rightXZ);
 		int x, y, z, yUpdated,i;
-		GLfloat temp;
+		glm::vec3 tempPos=this->Position;
 		x = this->Position.x / CUBESIZE / 2.0f;
 		y = this->Position.y / CUBESIZE / 2.0f;
 		z = this->Position.z / CUBESIZE / 2.0f;
+		/*
 		if (y < 2)
 		{
 			onGround = true;
+			this->Position.y = cameraHeight;
 			return;
 		}
+		*/
 		//cout << cubeAttribute[x][z][y-2]<< cubeAttribute[x][z][y-1]<< cubeAttribute[x][z][y]<<" ";
 		if (canMoveIn(cubeAttribute[x][z][y-2]))
 		{
@@ -165,36 +175,32 @@ public:
 		else
 		{
 			onGround = true;
-			this->Position.y = (y + 0.8)*CUBESIZE*2.0f;
+			this->Position.y = y*CUBESIZE*2.0f+cameraHeight;
 			dropSpeed = 0.0f;
 		}
-		
+		tempPos = this->Position;
 		if (onGround == false)
 		{
-			temp = this->Position.y - dropSpeed*deltaTime- deltaTime*deltaTime*GRAVITY/2.0f;
-			dropSpeed += deltaTime*GRAVITY;
-			yUpdated = temp / CUBESIZE / 2.0f;
-			if (yUpdated < 1)
+			//this->Position.x = x*CUBESIZE*2.0f + CUBESIZE;
+			//this->Position.z = z*CUBESIZE*2.0f + CUBESIZE;
+			if (minY < 0)
 			{
-				yUpdated = 1;
-			}
-			for (i = y; i >= yUpdated-1; i--)
-			{
-				if (!canMoveIn(cubeAttribute[x][z][i]))
+				while (canMoveIn(cubeAttribute[x][z][y - 2])&& canMoveIn(cubeAttribute[x][z][y - 1])&& canMoveIn(cubeAttribute[x][z][y]))
 				{
-					break;
+					y--;
 				}
+				minY = y ;
 			}
-			if (i == yUpdated - 2)
+			tempPos.y=-dropSpeed*deltaTime- deltaTime*deltaTime*GRAVITY/2.0f;
+			dropSpeed += deltaTime*GRAVITY;
+			if (tempPos.y < minY*CUBESIZE*2.0f + cameraHeight)
 			{
-				this->Position.y = temp;
-			}
-			else
-			{
-				this->Position.y = (i + 2.8)*CUBESIZE*2.0f;
+				tempPos.y = minY*CUBESIZE*2.0f + cameraHeight;
 				onGround = true;
 				dropSpeed = 0.0f;
+				minY = -1;
 			}
+			this->Position = tempPos;
 		}
 	}
 
@@ -216,44 +222,49 @@ public:
 		}
 		glm::vec3 frontXZ = this->Front;
 		frontXZ.y = 0;
-		frontXZ = glm::normalize(frontXZ)*velocity;
+		frontXZ = glm::normalize(frontXZ);
 		glm::vec3 rightXZ = this->Right;
 		rightXZ.y = 0;
-		rightXZ = glm::normalize(rightXZ)*velocity;
+		rightXZ = glm::normalize(rightXZ);
 		glm::vec3 nextPosition;
+		/*
 		if (JUMPING&&direction!=JUMP)
 		{
 			jumpDir = direction;
 			JUMPING = false;
 		}
+		*/
 		if (onGround)//认为地面阻力无限大，不考虑动量
 		{
 			if (direction == FORWARD)
 			{
-				nextPosition = this->Position + frontXZ;
+				nextPosition = this->Position + frontXZ*velocity;
 			}
 			if (direction == BACKWARD)
 			{
-				nextPosition = this->Position - frontXZ;
+				nextPosition = this->Position - frontXZ*velocity;
 			}
 			if (direction == LEFT)
 			{
-				nextPosition = this->Position - rightXZ;
+				nextPosition = this->Position - rightXZ*velocity;
 			}
 			if (direction == RIGHT)
 			{
-				nextPosition = this->Position + rightXZ;
+				nextPosition = this->Position + rightXZ*velocity;
 			}
-			/*
 			if (direction == JUMP)
 			{
+				cout << "jump";
 				JUMPING = true;
-				onGround = false;
+				//onGround = false;
 				dropSpeed = -CUBESIZE*5.0f;
+				nextPosition.y += CUBESIZE*3.0f;
+				
 			}
-			*/
+			
 			this->Position=collisionCorrector(this->Position, nextPosition, frontXZ, rightXZ);
 		}
+		lastDir = direction;
 		return;
 		/*
 		if (onGround)
