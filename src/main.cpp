@@ -41,6 +41,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 void Do_Movement();
 void Fetch_Around();
 void Init();
+GLuint loadSkyCubeTexture();
+
 
 // Camera
 Camera camera(glm::vec3(20.0f, 7.0f, 20.0f));
@@ -92,10 +94,11 @@ int main(){
 	glEnable(GL_MULTISAMPLE);
 	//glEnable(GL_FRAMEBUFFER_SRGB);
 
-	// Shader
-	Shader cubeShader("cube.vs", "cube.frag");
-	Shader modelShader("model.vs", "model.frag");
-	Shader hdrShader("hdr.vs", "hdr.frag");
+	// Shader 
+	Shader cubeShader("shader/cube.vs", "shader/cube.frag");
+	Shader modelShader("shader/model.vs", "shader/model.frag");
+	Shader hdrShader("shader/hdr.vs", "shader/hdr.frag");
+	Shader skyboxShader("shader/sky.vs", "shader/sky.frag");
 
 	Model steveModel("model/steve.obj");
 	GLuint soilVBO, soilVAO;
@@ -149,6 +152,17 @@ int main(){
 	glEnableVertexAttribArray(2);
 	glBindVertexArray(0);
 
+	// 天空盒 VAO
+	GLuint skyboxVAO, skyboxVBO;
+	glGenVertexArrays(1, &skyboxVAO);
+	glGenBuffers(1, &skyboxVBO);
+	glBindVertexArray(skyboxVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	glBindVertexArray(0);
+
 	// 加载纹理
 	GLuint cubeTexture;
 	glGenTextures(1, &cubeTexture);
@@ -158,11 +172,14 @@ int main(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	GLint imageWidth, imageHeight;
-	unsigned char* image = SOIL_load_image("texture.png", &imageWidth, &imageHeight, 0, SOIL_LOAD_RGB);
+	unsigned char* image = SOIL_load_image("texture/texture.png", &imageWidth, &imageHeight, 0, SOIL_LOAD_RGB);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, imageWidth, imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	SOIL_free_image_data(image);
 	glBindTexture(GL_TEXTURE_2D, 0);
+	//天空盒纹理
+	GLuint skycubeTexture = loadSkyCubeTexture();
+
 
 	// HDR
 	GLuint hdrFBO;
@@ -189,6 +206,8 @@ int main(){
 
 	glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
 	while (!glfwWindowShouldClose(window)){
+		glm::mat4 view;
+		glm::mat4 projection;
 		// Set frame time
 		GLfloat currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
@@ -213,10 +232,7 @@ int main(){
 		//临时采用相同的光照贴图
 		glUniform1i(glGetUniformLocation(cubeShader.Program, "material.specular"), 0);
 
-
-		glm::mat4 view;
         view = camera.GetViewMatrix();
-        glm::mat4 projection;	
         projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth/(float)screenHeight, 0.1f, 1000.0f);
 
         // Get the uniform locations
@@ -307,8 +323,25 @@ int main(){
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 
+		// 天空盒
+		glDepthFunc(GL_LEQUAL);  // Change depth function so depth test passes when values are equal to depth buffer's content
+		skyboxShader.Use();
+		view = glm::mat4(glm::mat3(camera.GetViewMatrix()));	// Remove any translation component of the view matrix
+		projection = glm::perspective(camera.Zoom, (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
+		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		
+		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glUniform1i(glGetUniformLocation(skyboxShader.Program, "skybox"), 0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, skycubeTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+		glDepthFunc(GL_LESS); // Set depth function back to default
+
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+		//hdr
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		hdrShader.Use();
 		glActiveTexture(GL_TEXTURE0);
@@ -316,8 +349,8 @@ int main(){
 		glUniform1i(glGetUniformLocation(hdrShader.Program, "hdrBuffer"), 0);
 		glUniform1f(glGetUniformLocation(hdrShader.Program, "exposure"), 1.0f);
 		RenderQuad();
-        // Swap the buffers
 
+        // Swap the buffers
         glfwSwapBuffers(window);
     }
     // Properly de-allocate all resources once they've outlived their purpose
@@ -515,4 +548,39 @@ void LBA_handle()
 		LBA_hold_time = 0.0f;
 		break;
 	}
+}
+
+GLuint loadSkyCubeTexture()
+{
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	//glActiveTexture(GL_TEXTURE0);
+
+	int width, height;
+	unsigned char* image;
+
+	vector<const GLchar*> faces;
+	faces.push_back("texture/skybox/right.png");
+	faces.push_back("texture/skybox/left.png");
+	faces.push_back("texture/skybox/top.png");
+	faces.push_back("texture/skybox/bottom.png");
+	faces.push_back("texture/skybox/back.png");
+	faces.push_back("texture/skybox/front.png");
+
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+	for (GLuint i = 0; i < faces.size(); i++)
+	{
+		image = SOIL_load_image(faces[i], &width, &height, 0, SOIL_LOAD_RGB);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+		SOIL_free_image_data(image);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	return textureID;
 }
