@@ -41,7 +41,7 @@ GLuint loadSkyCubeTexture();
 
 
 // Camera
-Camera camera(glm::vec3(20.0f, 7.0f, 20.0f));
+Camera camera(glm::vec3(10.0f, 7.0f, 10.0f));
 bool keys[1024];
 bool mouse[8];
 GLfloat lastX = 400, lastY = 300;
@@ -370,11 +370,14 @@ int main(){
 		cout << camera.Position.y << " ";
 		cout << camera.Position.z << "\n";
 		*/
-		//stevePosModel = glm::translate(stevePosModel, glm::vec3(camera.Position.x+3.06801f, camera.Position.y- 0.645863f, camera.Position.z-0.03818f));
-		stevePosModel = glm::translate(stevePosModel, glm::vec3(-1.0f, -CUBESIZE, -1.0f));
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(camera.Position.x, camera.Position.y - 0.7f, camera.Position.z) +
+			normalize(glm::vec3(camera.Front.x, 0, camera.Front.z))*CAMERABODYDISTANCE);
+		stevePosModel = glm::rotate(stevePosModel, glm::radians(-camera.Yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		stevePosModel = glm::scale(stevePosModel, glm::vec3(0.225f, 0.225f, 0.225f));
-		stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f,- 0.032011f, 0.0f));
-		stevePosModel = glm::rotate(stevePosModel,glm::radians(-camera.Yaw+90.0f),glm::vec3(0.0f,1.0f,0.0f));
+		//stevePosModel = glm::translate(stevePosModel, glm::vec3(camera.Position.x+3.06801f, camera.Position.y- 0.645863f, camera.Position.z-0.03818f));
+		//stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f, -2 * CUBESIZE, 0.0f));
+		//stevePosModel = glm::translate(stevePosModel, glm::vec3(-1.0f, -CUBESIZE, -1.0f));
+		//stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f,- 0.032011f, 0.0f));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(stevePosModel));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
@@ -493,7 +496,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	{
 		offsetC *= 1.5f;
 	}
-	if (key == GLFW_KEY_DOWN&& action == GLFW_PRESS)
+	if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
 	{
 		offsetC *= 0.5f;
 	}

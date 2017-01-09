@@ -8,6 +8,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#define CAMERABODYDISTANCE 0.5f
+
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
 enum Camera_Movement {
 	FORWARD,
@@ -20,10 +22,10 @@ enum Camera_Movement {
 // Default camera values
 const GLfloat YAW = -90.0f;
 const GLfloat PITCH = 0.0f;
-const GLfloat SPEED = 1.0f;
+const GLfloat SPEED = 2.0f;
 const GLfloat SENSITIVTY = 0.25f;
 const GLfloat ZOOM = 45.0f;
-const GLfloat GRAVITY = CUBESIZE*6.4f;
+const GLfloat GRAVITY = (CUBESIZE*-20.0f);
 
 // camera box half size
 GLfloat cameraHWidth = CUBESIZE*0.4;
@@ -47,7 +49,7 @@ GLfloat dropSpeed = 0.0f;
 bool collisionDetector(glm::vec3 position)
 {
 	int x, y, z;
-	position = position / CUBESIZE/ 2.0f;
+	position = position / CUBESIZE / 2.0f;
 	x = position.x;
 	y = position.y;
 	z = position.z;
@@ -67,7 +69,7 @@ bool sglCollDetr(glm::vec3 position)
 bool canDoMove(glm::vec3 nextPos, glm::vec3 frontV, glm::vec3 rightV)
 {
 	nextPos.y -= cameraHeight;
-	if (sglCollDetr(nextPos + rightV+frontV) || sglCollDetr(nextPos - rightV + frontV) || sglCollDetr(nextPos + rightV - frontV) ||
+	if (sglCollDetr(nextPos + rightV + frontV) || sglCollDetr(nextPos - rightV + frontV) || sglCollDetr(nextPos + rightV - frontV) ||
 		sglCollDetr(nextPos - rightV - frontV))
 		return false;
 	nextPos.y += playerHeight*0.5f;
@@ -95,7 +97,7 @@ glm::vec3 collisionCorrector(glm::vec3 curPos, glm::vec3 nextPos, glm::vec3 fron
 	}
 	return curPos;
 }
-GLint minY;
+GLint minY = -1;
 // An abstract camera class that processes input and calculates the corresponding Eular Angles, Vectors and Matrices for use in OpenGL
 class Camera
 {
@@ -156,9 +158,9 @@ public:
 		rightXZ = glm::normalize(rightXZ);
 		int x, y, z, yUpdated,i;
 		glm::vec3 tempPos=this->Position;
-		x = this->Position.x / CUBESIZE / 2.0f;
-		y = this->Position.y / CUBESIZE / 2.0f;
-		z = this->Position.z / CUBESIZE / 2.0f;
+		x = this->Position.x / CUBESIZE;
+		y = this->Position.y / CUBESIZE;
+		z = this->Position.z / CUBESIZE;
 		/*
 		if (y < 2)
 		{
@@ -172,12 +174,12 @@ public:
 		{
 			onGround = false;
 		}
-		else
+		/*else
 		{
 			onGround = true;
-			this->Position.y = y*CUBESIZE*2.0f+cameraHeight;
+			this->Position.y = y*CUBESIZE+cameraHeight;
 			dropSpeed = 0.0f;
-		}
+		}*/
 		tempPos = this->Position;
 		if (onGround == false)
 		{
@@ -185,17 +187,20 @@ public:
 			//this->Position.z = z*CUBESIZE*2.0f + CUBESIZE;
 			if (minY < 0)
 			{
-				while (canMoveIn(cubeAttribute[x][z][y - 2])&& canMoveIn(cubeAttribute[x][z][y - 1])&& canMoveIn(cubeAttribute[x][z][y]))
+				while (canMoveIn(cubeAttribute[x][z][y - 2]) && canMoveIn(cubeAttribute[x][z][y - 1]) 
+					&& canMoveIn(cubeAttribute[x][z][y]))
 				{
 					y--;
 				}
 				minY = y ;
 			}
-			tempPos.y=-dropSpeed*deltaTime- deltaTime*deltaTime*GRAVITY/2.0f;
-			dropSpeed += deltaTime*GRAVITY;
-			if (tempPos.y < minY*CUBESIZE*2.0f + cameraHeight)
+			minY = -100;
+			float det = deltaTime;
+			tempPos.y += (dropSpeed*det + det*det*GRAVITY/2.0f) * CUBESIZE;
+			dropSpeed += det*GRAVITY;
+			if (tempPos.y < minY*CUBESIZE + cameraHeight)
 			{
-				tempPos.y = minY*CUBESIZE*2.0f + cameraHeight;
+				tempPos.y = minY*CUBESIZE + cameraHeight;
 				onGround = true;
 				dropSpeed = 0.0f;
 				minY = -1;
@@ -254,15 +259,22 @@ public:
 			}
 			if (direction == JUMP)
 			{
-				cout << "jump";
-				JUMPING = true;
-				//onGround = false;
-				dropSpeed = -CUBESIZE*5.0f;
-				nextPosition.y += CUBESIZE*3.0f;
+				if (JUMPING == true) {
+					//
+				}
+				else {
+					cout << "jump";
+					JUMPING = true;
+					//onGround = false;
+					dropSpeed = CUBESIZE*5.0f;
+					//nextPosition.y += CUBESIZE*3.0f;
+				}
 				
 			}
 			
-			this->Position=collisionCorrector(this->Position, nextPosition, frontXZ, rightXZ);
+			this->Position = collisionCorrector(this->Position + normalize(glm::vec3(Front.x, 0, Front.z))*CAMERABODYDISTANCE,
+				nextPosition + normalize(glm::vec3(Front.x, 0, Front.z))*CAMERABODYDISTANCE, frontXZ, rightXZ)
+				- (normalize(glm::vec3(Front.x, 0, Front.z))*CAMERABODYDISTANCE);
 		}
 		lastDir = direction;
 		return;
@@ -301,6 +313,13 @@ public:
 
 		this->Yaw += xoffset;
 		this->Pitch += yoffset;
+		glm::mat4 rotatePosition;
+		/*rotatePosition = glm::translate(rotatePosition, glm::vec3(Position.x, Position.y, Position.z) +
+			normalize(glm::vec3(Front.x, 0, Front.z))*0.5f);
+		rotatePosition = glm::rotate(rotatePosition, glm::radians(xoffset), glm::vec3(0.0f, 1.0f, 0.0f));
+		rotatePosition = glm::inverse(glm::translate(rotatePosition, glm::vec3(Position.x, Position.y, Position.z) +
+			normalize(glm::vec3(Front.x, 0, Front.z))*0.5f));
+		this->Position = rotatePosition * glm::vec4(Position,1.0);*/
 
 		// Make sure that when pitch is out of bounds, screen doesn't get flipped
 		if (constrainPitch)

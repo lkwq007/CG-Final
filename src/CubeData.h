@@ -88,12 +88,12 @@ GLfloat cubeVertices[] = {
 	CUBESIZE,  CUBESIZE,  CUBESIZE,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f, // top-left
 	CUBESIZE, -CUBESIZE,  CUBESIZE,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f, // bottom-left     
 									 // Bottom face
-	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f, // top-right
+	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f, // top-right
 	CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f, // top-left
 	CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f, // bottom-left
 	CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f, // bottom-left
 	-CUBESIZE, -CUBESIZE,  CUBESIZE,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f, // bottom-right
-	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f, // top-right
+	-CUBESIZE, -CUBESIZE, -CUBESIZE,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f, // top-right
 									  // Top face
 	-CUBESIZE,  CUBESIZE, -CUBESIZE,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f, // top-left
 	CUBESIZE,  CUBESIZE,  CUBESIZE,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, // bottom-right
@@ -310,10 +310,16 @@ void initCubeAttribute(void) {
 	}
 	//tree bole
 	memcpy(boleCubeVertices, cubeVertices, sizeof(cubeVertices));
-	for (int l = 0; l < 36; l++) {
-		boleCubeVertices[l * 8 + 6] *= 1.0 / 16 / 16 * 12;
-		boleCubeVertices[l * 8 + 6] += (4 * 16 + 3) * 1.0 / 256;
-		boleCubeVertices[l * 8 + 7] *= 1.0 / 16 / 16 * 12;
-		boleCubeVertices[l * 8 + 7] += (14 * 16 + 3) * 1.0 / 256;
+	for (int l = 0; l < 24; l++) {
+		boleCubeVertices[l * 8 + 6] *= 1.0 / 16 / 16 * 15;
+		boleCubeVertices[l * 8 + 6] += (4 * 16 + 1) * 1.0 / 256;
+		boleCubeVertices[l * 8 + 7] *= 1.0 / 16 / 16 * 15;
+		boleCubeVertices[l * 8 + 7] += (14 * 16 + 1) * 1.0 / 256;
+	}
+	for (int l = 24; l < 36; l++) {
+		boleCubeVertices[l * 8 + 6] *= 1.0 / 16 / 16 * 15;
+		boleCubeVertices[l * 8 + 6] += (4 * 16 + 1) * 1.0 / 256;
+		boleCubeVertices[l * 8 + 7] *= 1.0 / 16 / 16 * 15;
+		boleCubeVertices[l * 8 + 7] += (13 * 16 + 1) * 1.0 / 256;
 	}
 }
