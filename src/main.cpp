@@ -53,7 +53,8 @@ GLfloat lastFrame = 0.0f;
 glm::mat4 soilMat[10000];
 glm::vec3 stoneOffset[10000];
 glm::vec3 grassOffset[10000];*/
-
+GLfloat diffuse = 0.4f;
+GLfloat spec = 0.6f;
 // The MAIN function, from here we start our application and run our Game loop
 int main(){
 	// Init some data
@@ -311,8 +312,8 @@ int main(){
 
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.direction"), 0.2f, -1.0f, 0.3f);
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.ambient"), 0.05f, 0.05f, 0.05f);
-		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.diffuse"), 0.4f, 0.4f, 0.4f);
-		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.specular"), 0.5f, 0.5f, 0.5f);
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.diffuse"), diffuse, diffuse, diffuse);
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.specular"), spec, spec, spec);
 		//soilIndex = 0;
 		for (int i = 0; i < WORLDWIDTH; i++) {
 			for (int j = 0; j < WORLDLENGTH; j++) {
@@ -510,11 +511,19 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 	if (key == GLFW_KEY_UP && action == GLFW_PRESS)
 	{
-		offsetC *= 1.5f;
+		spec *= 1.5f;
 	}
 	if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
 	{
-		offsetC *= 0.5f;
+		spec *= 0.5f;
+	}
+	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+	{
+		diffuse *= 1.5f;
+	}
+	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+	{
+		diffuse *= 0.5f;
 	}
 	if (key == GLFW_KEY_SPACE&&action == GLFW_PRESS)
 	{
