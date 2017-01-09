@@ -41,7 +41,7 @@ GLuint loadSkyCubeTexture();
 
 
 // Camera
-Camera camera(glm::vec3(10.0f, 7.0f, 10.0f));
+Camera camera(glm::vec3(20.0f, 8.0f, 20.0f));
 bool keys[1024];
 bool mouse[8];
 GLfloat lastX = 400, lastY = 300;
@@ -305,7 +305,7 @@ int main(){
         // Pass the matrices to the shader
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
+		
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 		glUniform1f(glGetUniformLocation(cubeShader.Program, "material.shininess"), 32.0f);
 
@@ -360,9 +360,9 @@ int main(){
 			}
 		}
 
-		modelShader.Use();
+		//modelShader.Use();
 		glm::mat4 stevePosModel;
-		glUniform3f(glGetUniformLocation(modelShader.Program, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
+		//glUniform3f(glGetUniformLocation(modelShader.Program, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 		//stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f, -CUBESIZE - 0.032011f*0.225f, 0.0f));
 		
 		/*
@@ -370,14 +370,30 @@ int main(){
 		cout << camera.Position.y << " ";
 		cout << camera.Position.z << "\n";
 		*/
-		stevePosModel = glm::translate(stevePosModel, glm::vec3(camera.Position.x, camera.Position.y - 0.7f, camera.Position.z) +
-			normalize(glm::vec3(camera.Front.x, 0, camera.Front.z))*CAMERABODYDISTANCE);
+		/*
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(camera.Position.x, camera.Position.y - cameraHeight, camera.Position.z) +
+			normalize(glm::vec3(camera.Front.x, 0, camera.Front.z)));
 		stevePosModel = glm::rotate(stevePosModel, glm::radians(-camera.Yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		stevePosModel = glm::scale(stevePosModel, glm::vec3(0.225f, 0.225f, 0.225f));
-		//stevePosModel = glm::translate(stevePosModel, glm::vec3(camera.Position.x+3.06801f, camera.Position.y- 0.645863f, camera.Position.z-0.03818f));
-		//stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f, -2 * CUBESIZE, 0.0f));
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(camera.Position.x+3.06801f, camera.Position.y- 0.645863f, camera.Position.z-0.03818f));
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f, -2 * CUBESIZE, 0.0f));
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(-1.0f, -CUBESIZE, -1.0f));
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f,- 0.032011f, 0.0f));
+		*/
+		GLint steveY;
+		for (GLint i=0; i < WORLDHEIGHT; i++)
+		{
+			if (cubeAttribute[50][50][i] == air)
+			{
+				steveY = i;
+				break;
+			}
+		}
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(20.0f, steveY*CUBESIZE*2.0f-0.2f, 20.0f));
 		//stevePosModel = glm::translate(stevePosModel, glm::vec3(-1.0f, -CUBESIZE, -1.0f));
-		//stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f,- 0.032011f, 0.0f));
+		stevePosModel = glm::scale(stevePosModel, glm::vec3(0.245f, 0.245f, 0.245f));
+		stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f, -0.032011f, 0.0f));
+		stevePosModel = glm::rotate(stevePosModel, glm::radians(-camera.Yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(stevePosModel));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
@@ -472,8 +488,8 @@ void Do_Movement(){
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (keys[GLFW_KEY_D])
 		camera.ProcessKeyboard(RIGHT, deltaTime);
-	if (keys[GLFW_KEY_SPACE])
-		camera.ProcessKeyboard(JUMP, deltaTime);
+	//if (keys[GLFW_KEY_SPACE])
+		//camera.ProcessKeyboard(JUMP, deltaTime);
 	camera.ProcessFloated(deltaTime);
 }
 
@@ -499,6 +515,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
 	{
 		offsetC *= 0.5f;
+	}
+	if (key == GLFW_KEY_SPACE&&action == GLFW_PRESS)
+	{
+		JUMPING = true;
+	}
+	if (key == GLFW_KEY_SPACE&&action == GLFW_RELEASE)
+	{
+		JUMPING = false;
 	}
 	if (key >= 0 && key < 1024){
 		if (action == GLFW_PRESS)

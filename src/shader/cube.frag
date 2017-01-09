@@ -46,6 +46,11 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main()
 {
+	vec3 tempColor=vec3(texture(material.diffuse, TexCoords));
+	if(tempColor==vec3(1.0, 0.0, 1.0))
+	{
+		discard;
+	}
 	// Properties
 	vec3 norm = normalize(Normal);
 	vec3 viewDir = normalize(viewPos - FragPos);
@@ -63,6 +68,7 @@ void main()
 		result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);    
 	// Phase 3: Spot light
 	// result += CalcSpotLight(spotLight, norm, FragPos, viewDir);    
+
 	FragColor = vec4(result, 1.0);
 	float brightness = dot(result, vec3(0.2126, 0.7152, 0.0722));
 	if(brightness > 1.0)
