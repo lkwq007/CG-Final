@@ -8,7 +8,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #define CAMERABODYDISTANCE 0.5f
-// Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
+
+//定义几种相机操作
 enum Camera_Movement {
 	FORWARD,
 	BACKWARD,
@@ -17,7 +18,7 @@ enum Camera_Movement {
 	JUMP
 };
 
-// Default camera values
+//相机相关的常数值
 const GLfloat YAW = -90.0f;
 const GLfloat PITCH = 0.0f;
 const GLfloat SPEED = 1.0f;
@@ -25,25 +26,26 @@ const GLfloat SENSITIVTY = 0.25f;
 const GLfloat ZOOM = 45.0f;
 const GLfloat GRAVITY = CUBESIZE*6.4f;
 
-// camera box half size
+//相机盒半高
 GLfloat cameraHWidth = CUBESIZE*0.4;
 GLfloat cameraHTick = CUBESIZE*0.2;
 GLfloat cameraHeight = 1.65*CUBESIZE*2.0;
 GLfloat playerHeight = 1.8*CUBESIZE*2.0;
 
-// camera mode
+//相机模式
 enum Camera_Mode
 {
-	NORMAL_MODE,
-	GOD_MODE
+	NORMAL_MODE,//普通模式
+	GOD_MODE	//上帝模式
 };
 
-bool onGround = false;
-bool JUMPING = false;
+bool onGround = false;	//在地上与否的标志位
+bool JUMPING = false;	//跳起与否的标志位
 Camera_Movement jumpDir = FORWARD;
 Camera_Movement lastDir = FORWARD;
 GLfloat dropSpeed = 0.0f;
 
+//冲突检测
 bool collisionDetector(glm::vec3 position)
 {
 	int x, y, z;
@@ -64,6 +66,7 @@ bool sglCollDetr(glm::vec3 position)
 	return !canMoveIn(cubeAttribute[x][z][y]);
 }
 
+//判断是否能进入
 bool canDoMove(glm::vec3 nextPos, glm::vec3 frontV, glm::vec3 rightV)
 {
 	nextPos.y -= cameraHeight;
@@ -81,6 +84,7 @@ bool canDoMove(glm::vec3 nextPos, glm::vec3 frontV, glm::vec3 rightV)
 	return true;
 }
 
+//冲突修正
 glm::vec3 collisionCorrector(glm::vec3 curPos, glm::vec3 nextPos, glm::vec3 frontV, glm::vec3 rightV)
 {
 	frontV = cameraHTick*frontV;
@@ -100,26 +104,26 @@ glm::vec3 collisionCorrector(glm::vec3 curPos, glm::vec3 nextPos, glm::vec3 fron
 	return curPos;
 }
 GLint minY;
-// An abstract camera class that processes input and calculates the corresponding Eular Angles, Vectors and Matrices for use in OpenGL
+//定义相机类
 class Camera
 {
 public:
-	// Camera Attributes
+	// Camera 属性
 	glm::vec3 Position;
 	glm::vec3 Front;
 	glm::vec3 Up;
 	glm::vec3 Right;
 	glm::vec3 WorldUp;
-	// Eular Angles
+	// 欧拉角
 	GLfloat Yaw;
 	GLfloat Pitch;
-	// Camera options
+	// Camera 选项
 	GLfloat MovementSpeed;
 	GLfloat MouseSensitivity;
 	GLfloat Zoom;
 	Camera_Mode Mode;
 
-	// Constructor with vectors
+	// 无参构造函数
 	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), GLfloat yaw = YAW, GLfloat pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVTY), Zoom(ZOOM)
 	{
 		this->Position = position;
@@ -129,7 +133,7 @@ public:
 		this->Mode = NORMAL_MODE;
 		this->updateCameraVectors();
 	}
-	// Constructor with scalar values
+	// 带参构造函数
 	Camera(GLfloat posX, GLfloat posY, GLfloat posZ, GLfloat upX, GLfloat upY, GLfloat upZ, GLfloat yaw, GLfloat pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVTY), Zoom(ZOOM)
 	{
 		this->Position = glm::vec3(posX, posY, posZ);
@@ -140,18 +144,20 @@ public:
 		this->updateCameraVectors();
 	}
 
-	// Returns the view matrix calculated using Eular Angles and the LookAt Matrix
+	//返回view矩阵
 	glm::mat4 GetViewMatrix()
 	{
 		return glm::lookAt(this->Position, this->Position + this->Front, this->Up);
 	}
+	//每过一段时间执行一次
 	GLint floatedTime;
 	void ProcessFloated(GLfloat deltaTime)
 	{
-		if (this->Mode == GOD_MODE)
+		if (this->Mode == GOD_MODE)//上帝模式
 		{
 			return;
 		}
+		//得到方向向量
 		glm::vec3 frontXZ = this->Front;
 		frontXZ.y = 0;
 		frontXZ = glm::normalize(frontXZ);
@@ -163,15 +169,8 @@ public:
 		x = this->Position.x / CUBESIZE / 2.0f;
 		y = this->Position.y / CUBESIZE / 2.0f;
 		z = this->Position.z / CUBESIZE / 2.0f;
-		/*
-		if (y < 2)
-		{
-		onGround = true;
-		this->Position.y = cameraHeight;
-		return;
-		}
-		*/
-		//cout << cubeAttribute[x][z][y-2]<< cubeAttribute[x][z][y-1]<< cubeAttribute[x][z][y]<<" ";
+		
+		//判断脚下是否是土地
 		if (canMoveIn(cubeAttribute[x][z][y - 2]))
 		{
 			onGround = false;
@@ -185,8 +184,7 @@ public:
 		tempPos = this->Position;
 		if (onGround == false)
 		{
-			//this->Position.x = x*CUBESIZE*2.0f + CUBESIZE;
-			//this->Position.z = z*CUBESIZE*2.0f + CUBESIZE;
+			//找出脚下最近的土地
 			if (minY < 0)
 			{
 				while (canMoveIn(cubeAttribute[x][z][y - 2]) && canMoveIn(cubeAttribute[x][z][y - 1]) && canMoveIn(cubeAttribute[x][z][y]))
@@ -202,6 +200,7 @@ public:
 					minY = y;
 				}
 			}
+			//重力下落方程
 			tempPos.y = -dropSpeed*deltaTime - deltaTime*deltaTime*GRAVITY / 2.0f;
 			dropSpeed += deltaTime*GRAVITY;
 			if (tempPos.y < minY*CUBESIZE*2.0f + cameraHeight)
@@ -215,10 +214,11 @@ public:
 		}
 	}
 
-	// Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
+	//键盘函数
 	void ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime)
 	{
 		GLfloat velocity = this->MovementSpeed * deltaTime;
+		//对不同的操作做出不同反应
 		if (this->Mode == GOD_MODE)
 		{
 			if (direction == FORWARD)
@@ -231,6 +231,7 @@ public:
 				this->Position += this->Right * velocity;
 			return;
 		}
+		//计算下一位置
 		glm::vec3 frontXZ = this->Front;
 		frontXZ.y = 0;
 		frontXZ = glm::normalize(frontXZ);
@@ -238,14 +239,8 @@ public:
 		rightXZ.y = 0;
 		rightXZ = glm::normalize(rightXZ);
 		glm::vec3 nextPosition;
-		/*
-		if (JUMPING&&direction!=JUMP)
-		{
-		jumpDir = direction;
-		JUMPING = false;
-		}
-		*/
-		if (onGround)//��Ϊ�����������޴󣬲����Ƕ���
+		
+		if (onGround)//地面移动函数
 		{
 			if (direction == FORWARD)
 			{
@@ -276,34 +271,9 @@ public:
 		}
 		lastDir = direction;
 		return;
-		/*
-		if (onGround)
-		{
-		glm::vec3 prevPositon = this->Position;
-		if (direction == FORWARD)
-		this->Position += this->Front * velocity;
-		if (direction == BACKWARD)
-		this->Position -= this->Front * velocity;
-		if (direction == LEFT)
-		this->Position -= this->Right * velocity;
-		if (direction == RIGHT)
-		this->Position += this->Right * velocity;
-		this->Position.y = prevPositon.y;
-		if (direction == JUMP)
-		{
-		this->Position.y += CUBESIZE*3.0f;
-		this->Position.x += (this->Position.x - prevPositon.x) * 2;
-		this->Position.z += (this->Position.z - prevPositon.z) * 2;
-		}
-		if (collisionDetector(Position))
-		{
-		this->Position = prevPositon;
-		}
-		}
-		*/
 	}
 
-	// Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
+	//鼠标移动函数
 	void ProcessMouseMovement(GLfloat xoffset, GLfloat yoffset, GLboolean constrainPitch = true)
 	{
 		xoffset *= this->MouseSensitivity;
@@ -312,7 +282,7 @@ public:
 		this->Yaw += xoffset;
 		this->Pitch += yoffset;
 
-		// Make sure that when pitch is out of bounds, screen doesn't get flipped
+		//保证数据范围
 		if (constrainPitch)
 		{
 			if (this->Pitch > 89.0f)
@@ -321,11 +291,11 @@ public:
 				this->Pitch = -89.0f;
 		}
 
-		// Update Front, Right and Up Vectors using the updated Eular angles
+		// 更新相机
 		this->updateCameraVectors();
 	}
 
-	// Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
+	//滚轮函数
 	void ProcessMouseScroll(GLfloat yoffset)
 	{
 		if (this->Zoom >= 1.0f && this->Zoom <= 45.0f)
@@ -337,17 +307,17 @@ public:
 	}
 
 private:
-	// Calculates the front vector from the Camera's (updated) Eular Angles
+	// 计算向量和欧拉角
 	void updateCameraVectors()
 	{
-		// Calculate the new Front vector
+		//计算front向量
 		glm::vec3 front;
 		front.x = cos(glm::radians(this->Yaw)) * cos(glm::radians(this->Pitch));
 		front.y = sin(glm::radians(this->Pitch));
 		front.z = sin(glm::radians(this->Yaw)) * cos(glm::radians(this->Pitch));
 		this->Front = glm::normalize(front);
-		// Also re-calculate the Right and Up vector
-		this->Right = glm::normalize(glm::cross(this->Front, this->WorldUp));  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+		//计算right和up向量
+		this->Right = glm::normalize(glm::cross(this->Front, this->WorldUp));  //归一
 		this->Up = glm::normalize(glm::cross(this->Right, this->Front));
 	}
 };
