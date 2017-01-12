@@ -451,7 +451,7 @@ int main(){
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 		glUniform1f(glGetUniformLocation(cubeShader.Program, "material.shininess"), 32.0f);
 
-		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.direction"), 0.0f, -20.0f, -15.0f);
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.direction"), 0.2f, -1.0f, 0.3f);
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.ambient"), 0.05f, 0.05f, 0.05f);
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.diffuse"), diffuse, diffuse, diffuse);
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.specular"), spec, spec, spec);
