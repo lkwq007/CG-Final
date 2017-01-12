@@ -38,6 +38,8 @@ void Do_Movement();
 void Fetch_Around();
 void Init();
 GLuint loadSkyCubeTexture();
+GLint touch_cube_edge(GLint *x, GLint *y, GLint *z);
+void place_cube(GLint x, GLint y, GLint z);
 
 
 // Camera
@@ -47,6 +49,9 @@ bool mouse[8];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
 
+
+
+
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 /*GLint soilIndex;
@@ -55,6 +60,7 @@ glm::vec3 stoneOffset[10000];
 glm::vec3 grassOffset[10000];*/
 GLfloat diffuse = 0.4f;
 GLfloat spec = 0.6f;
+CubeType currentCubeOnHand = soil;
 // The MAIN function, from here we start our application and run our Game loop
 int main(){
 	// Init some data
@@ -98,8 +104,37 @@ int main(){
 	Shader bloomShader("shader/bloom-hdr.vs", "shader/bloom-hdr.frag");
 	Shader blurShader("shader/blur.vs", "shader/blur.frag");
 	Shader skyboxShader("shader/sky.vs", "shader/sky.frag");
+	//Shader shader("shadow_mapping.vs", "shadow_mapping.frag");
+	Shader simpleDepthShader("shader/shadow-mapping-depth.vs", "shader/shadow-mapping-depth.frag");
+	//Shader debugDepthQuad("debug_quad.vs", "debug_quad_depth.frag");
 
 	Model steveModel("model/steve.obj");
+
+	// Configure depth map FBO
+	const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+	GLuint depthMapFBO;
+	glGenFramebuffers(1, &depthMapFBO);
+	// - Create depth texture
+	GLuint depthMap;
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	GLfloat borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+
 	GLuint soilVBO, soilVAO;
 	glGenVertexArrays(1, &soilVAO);
 	glGenBuffers(1, &soilVBO);
@@ -281,6 +316,99 @@ int main(){
 		Do_Movement();
 		Fetch_Around();
 		LBA_handle();
+
+
+		glm::vec3 lightPos = glm::vec3(20.0f, 25.0f, 10.0f);
+		glm::mat4 lightProjection, lightView;
+		glm::mat4 lightSpaceMatrix;
+		GLfloat near_plane = 0.1f, far_plane = 37.5f;
+		lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 0.0f, near_plane, far_plane);
+		//lightProjection = glm::perspective(45.0f, (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // Note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene.
+		lightView = glm::lookAt(lightPos, glm::vec3(20.0f,5.0f,25.0f), glm::vec3(0.0, 1.0, 0.0));
+		lightSpaceMatrix = lightProjection * lightView;
+		// - now render scene from light's point of view
+		simpleDepthShader.Use();
+		glUniformMatrix4fv(glGetUniformLocation(simpleDepthShader.Program, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+
+		GLint modelLoc = glGetUniformLocation(simpleDepthShader.Program, "model");
+		//GLint modelAdjustLoc = glGetUniformLocation(cubeShader.Program, "modelAdjust");
+		GLint viewLoc = glGetUniformLocation(simpleDepthShader.Program, "view");
+		GLint projLoc = glGetUniformLocation(simpleDepthShader.Program, "projection");
+
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		for (int i = 0; i < WORLDWIDTH; i++) {
+			for (int j = 0; j < WORLDLENGTH; j++) {
+				for (int k = 0; k < WORLDHEIGHT; k++) {
+					if (cubeAttribute[i][j][k] == air) {
+						continue;
+					}
+					glm::mat4 model;
+					model = glm::translate(model, glm::vec3((float)i*CUBESIZE * 2, (float)k * CUBESIZE * 2, (float)j*CUBESIZE * 2));
+					//glm::mat3 modelAdjust = glm::mat3(transpose(inverse(model)));
+					//glUniformMatrix4fv(modelAdjustLoc, 1, GL_FALSE, glm::value_ptr(modelAdjust));
+					if (cubeAttribute[i][j][k] == soil) {
+						//soilMat[soilIndex++] = model;
+						glBindVertexArray(soilVAO);
+						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+						glDrawArrays(GL_TRIANGLES, 0, 36);
+						glBindVertexArray(0);
+
+					}
+					else if (cubeAttribute[i][j][k] == stone) {
+						glBindVertexArray(stoneVAO);
+						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+						glDrawArrays(GL_TRIANGLES, 0, 36);
+						glBindVertexArray(0);
+					}
+					else if (cubeAttribute[i][j][k] == grass) {
+						glBindVertexArray(grassVAO);
+						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+						glDrawArrays(GL_TRIANGLES, 0, 36);
+						glBindVertexArray(0);
+					}
+					else if (cubeAttribute[i][j][k] == bole) {
+						glBindVertexArray(boleVAO);
+						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+						glDrawArrays(GL_TRIANGLES, 0, 36);
+						glBindVertexArray(0);
+					}
+					else if (cubeAttribute[i][j][k] == leaf) {
+						glBindVertexArray(leafVAO);
+						glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+						glDrawArrays(GL_TRIANGLES, 0, 36);
+						glBindVertexArray(0);
+					}
+				}
+			}
+		}
+		glm::mat4 stevePosModels;
+		GLint steveY;
+		for (GLint i = 0; i < WORLDHEIGHT; i++)
+		{
+			if (cubeAttribute[50][50][i] == air)
+			{
+				steveY = i;
+				break;
+			}
+		}
+		stevePosModels = glm::translate(stevePosModels, glm::vec3(20.0f, steveY*CUBESIZE*2.0f - 0.2f, 20.0f));
+		//stevePosModel = glm::translate(stevePosModel, glm::vec3(-1.0f, -CUBESIZE, -1.0f));
+		stevePosModels = glm::scale(stevePosModels, glm::vec3(0.245f, 0.245f, 0.245f));
+		stevePosModels = glm::translate(stevePosModels, glm::vec3(0.0f, -0.032011f, 0.0f));
+		stevePosModels = glm::rotate(stevePosModels, glm::radians(-camera.Yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		glUniformMatrix4fv(glGetUniformLocation(simpleDepthShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(stevePosModels));
+		glUniformMatrix4fv(glGetUniformLocation(simpleDepthShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(simpleDepthShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		steveModel.Draw(simpleDepthShader);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		// 2. Render scene as normal 
+		glViewport(0, 0, screenWidth, screenHeight);
+
+
+
 		// 绑定 HDR 帧缓冲
 		glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 		// Clear the colorbuffer
@@ -294,14 +422,22 @@ int main(){
 		//临时采用相同的光照贴图
 		glUniform1i(glGetUniformLocation(cubeShader.Program, "material.specular"), 0);
 
+		glUniform3fv(glGetUniformLocation(cubeShader.Program, "lightPos"), 1, &lightPos[0]);
+		//glUniform3fv(glGetUniformLocation(cubeShader.Program, "viewPos"), 1, &camera.Position[0]);
+		glUniformMatrix4fv(glGetUniformLocation(cubeShader.Program, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+		// Enable/Disable shadows by pressing 'SPACE'
+		//glUniform1i(glGetUniformLocation(cubeShader.Program, "shadows"), shadows);
+		glUniform1i(glGetUniformLocation(cubeShader.Program, "shadowMap"), 1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
         view = camera.GetViewMatrix();
         projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth/(float)screenHeight, 0.1f, 1000.0f);
 
         // Get the uniform locations
-        GLint modelLoc = glGetUniformLocation(cubeShader.Program, "model");
+        modelLoc = glGetUniformLocation(cubeShader.Program, "model");
 		//GLint modelAdjustLoc = glGetUniformLocation(cubeShader.Program, "modelAdjust");
-		GLint viewLoc = glGetUniformLocation(cubeShader.Program, "view");
-        GLint projLoc = glGetUniformLocation(cubeShader.Program, "projection"); 
+		viewLoc = glGetUniformLocation(cubeShader.Program, "view");
+        projLoc = glGetUniformLocation(cubeShader.Program, "projection"); 
 
         // Pass the matrices to the shader
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -362,7 +498,7 @@ int main(){
 		}
 
 		//modelShader.Use();
-		glm::mat4 stevePosModel;
+		
 		//glUniform3f(glGetUniformLocation(modelShader.Program, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 		//stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f, -CUBESIZE - 0.032011f*0.225f, 0.0f));
 		
@@ -381,7 +517,7 @@ int main(){
 		stevePosModel = glm::translate(stevePosModel, glm::vec3(-1.0f, -CUBESIZE, -1.0f));
 		stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f,- 0.032011f, 0.0f));
 		*/
-		GLint steveY;
+		glm::mat4 stevePosModel;
 		for (GLint i=0; i < WORLDHEIGHT; i++)
 		{
 			if (cubeAttribute[50][50][i] == air)
@@ -462,6 +598,7 @@ int main(){
 		glUniform1f(glGetUniformLocation(bloomShader.Program, "exposure"), exposure);
 		RenderQuad();
 
+
         // Swap the buffers
         glfwSwapBuffers(window);
     }
@@ -533,6 +670,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	{
 		JUMPING = false;
 	}
+	if (key == GLFW_KEY_ENTER&&action == GLFW_PRESS)
+	{
+		currentCubeOnHand = CubeType((currentCubeOnHand + 1) % 6);
+		if (currentCubeOnHand == air)
+		{
+			currentCubeOnHand = soil;
+		}
+	}
 	if (key >= 0 && key < 1024){
 		if (action == GLFW_PRESS)
 			keys[key] = true;
@@ -559,6 +704,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos){
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
+	GLint x, y, z;
 	if (action == GLFW_PRESS)
 	{
 		mouse[button] = true;
@@ -566,6 +712,13 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	else
 	{
 		mouse[button] = false;
+	}
+	if (button == GLFW_MOUSE_BUTTON_2&&action == GLFW_PRESS)
+	{
+		if (touch_cube_edge(&x, &y, &z))
+		{
+			place_cube(x, y, z);
+		}
 	}
 }
 
@@ -608,11 +761,47 @@ GLint touch_cube(GLint *x, GLint *y, GLint *z)
 	return i - 1;
 }
 
+GLint touch_cube_edge(GLint *x, GLint *y, GLint *z)
+{
+	glm::vec3 temp = camera.Position;
+	temp += camera.Right*0.09375f;
+	cout << "offset" << offsetC << " ";
+	GLint i;
+	for (i = 1; i <= TOUCH_MAX; i++)
+	{
+		temp += camera.Front*TOUCH_STEP;
+		*x = temp.x / CUBESIZE / 2.0f;
+		*y = temp.y / CUBESIZE / 2.0f;
+		*z = temp.z / CUBESIZE / 2.0f;
+		if (!canMoveIn(cubeAttribute[*x][*z][*y]))
+		{
+			break;
+		}
+	}
+	if (i == TOUCH_MAX + 1)
+	{
+		return 0;
+	}
+	temp -= camera.Front*TOUCH_STEP;
+	*x = temp.x / CUBESIZE / 2.0f;
+	*y = temp.y / CUBESIZE / 2.0f;
+	*z = temp.z / CUBESIZE / 2.0f;
+	return i - 1;
+}
+
 void digged_cube(GLint x, GLint y, GLint z)
 {
 	UpdateDynamicItem(cubeAttribute[x][z][y]);
 	cubeAttribute[x][z][y] = air;
 	return;
+}
+
+
+void place_cube(GLint x, GLint y, GLint z)
+{
+	cubeAttribute[x][z][y] = currentCubeOnHand;
+	cout << currentCubeOnHand<<"placed!";
+	//cubeAttribute[x][y][z] = stone;
 }
 
 void LBA_handle()
