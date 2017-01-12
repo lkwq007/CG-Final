@@ -49,7 +49,7 @@ bool mouse[8];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
 
-
+GLboolean bloom = true;
 
 
 GLfloat deltaTime = 0.0f;
@@ -94,11 +94,12 @@ int main(){
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	//glEnable(GL_MULTISAMPLE);
+	glEnable(GL_MULTISAMPLE);
 	//glEnable(GL_FRAMEBUFFER_SRGB);
 
 	// Shader 
 	Shader cubeShader("shader/cube.vs", "shader/cube.frag");
+	Shader lightShader("shader/cube.vs", "shader/lightbox.frag");
 	Shader modelShader("shader/model.vs", "shader/model.frag");
 	//Shader hdrShader("shader/hdr.vs", "shader/hdr.frag");
 	Shader bloomShader("shader/bloom-hdr.vs", "shader/bloom-hdr.frag");
@@ -109,6 +110,10 @@ int main(){
 	//Shader debugDepthQuad("debug_quad.vs", "debug_quad_depth.frag");
 
 	Model steveModel("model/steve.obj");
+
+	bloomShader.Use();
+	glUniform1i(glGetUniformLocation(bloomShader.Program, "scene"), 0);
+	glUniform1i(glGetUniformLocation(bloomShader.Program, "bloomBlur"), 1);
 
 	// Configure depth map FBO
 	const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
@@ -446,10 +451,19 @@ int main(){
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 		glUniform1f(glGetUniformLocation(cubeShader.Program, "material.shininess"), 32.0f);
 
-		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.direction"), 0.2f, -1.0f, 0.3f);
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.direction"), 0.0f, -20.0f, -15.0f);
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.ambient"), 0.05f, 0.05f, 0.05f);
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.diffuse"), diffuse, diffuse, diffuse);
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "dirLight.specular"), spec, spec, spec);
+
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "pointLights[0].position"), 25.0f, 8.0f, 20.0f);
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "pointLights[0].ambient"), 0.05f, 0.05f, 0.05f);
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "pointLights[0].diffuse"), 0.8f, 0.8f, 0.8f);
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "pointLights[0].specular"), 5.0f, 5.0f, 5.0f);
+		glUniform1f(glGetUniformLocation(cubeShader.Program, "pointLights[0].constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(cubeShader.Program, "pointLights[0].linear"), 0.09);
+		glUniform1f(glGetUniformLocation(cubeShader.Program, "pointLights[0].quadratic"), 0.032);
+		glUniform1i(glGetUniformLocation(cubeShader.Program, "point_lights"), 1);
 		//soilIndex = 0;
 		for (int i = 0; i < WORLDWIDTH; i++) {
 			for (int j = 0; j < WORLDLENGTH; j++) {
@@ -537,17 +551,19 @@ int main(){
 		steveModel.Draw(modelShader);
 		cubeShader.Use();
 		glm::mat4 tempModel;
-		tempModel = glm::translate(tempModel, glm::vec3(-2.0f, 0.0f, -1.0f));
+		tempModel = glm::translate(tempModel, glm::vec3(25.0f, 8.0f, 20.0f));
 		GLfloat test=1.0f;
-
-		tempModel = glm::scale(tempModel, glm::vec3(1.0f, test, 1.0f));
+		lightShader.Use();
+		tempModel = glm::scale(tempModel, glm::vec3(0.5f, 0.5f, 0.5f));
 		//tempModel = glm::translate(tempModel, glm::vec3(0.0f, CUBESIZE/2, 0.0f));
-		glUniformMatrix4fv(glGetUniformLocation(cubeShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(tempModel));
-		glUniformMatrix4fv(glGetUniformLocation(cubeShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(glGetUniformLocation(cubeShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-		glBindVertexArray(grassVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glBindVertexArray(0);
+		glUniform3f(glGetUniformLocation(lightShader.Program, "lightColor"), 5.0f,5.0f,5.0f);
+		glUniformMatrix4fv(glGetUniformLocation(lightShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(tempModel));
+		glUniformMatrix4fv(glGetUniformLocation(lightShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(lightShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		RenderCube();
+		//glBindVertexArray(grassVAO);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glBindVertexArray(0);
 
 		// Ìì¿ÕºÐ
 		glDepthFunc(GL_LEQUAL);  // Change depth function so depth test passes when values are equal to depth buffer's content
@@ -592,7 +608,7 @@ int main(){
 		//glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
-		GLboolean bloom = true;
+		
 		GLfloat exposure = 1.0f;
 		glUniform1i(glGetUniformLocation(bloomShader.Program, "bloom"), bloom);
 		glUniform1f(glGetUniformLocation(bloomShader.Program, "exposure"), exposure);
@@ -669,6 +685,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_SPACE&&action == GLFW_RELEASE)
 	{
 		JUMPING = false;
+	}
+	if (key == GLFW_KEY_F2&&action == GLFW_PRESS)
+	{
+		bloom = !bloom;
 	}
 	if (key == GLFW_KEY_ENTER&&action == GLFW_PRESS)
 	{
