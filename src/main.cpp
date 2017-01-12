@@ -402,7 +402,7 @@ int main(){
 		//stevePosModel = glm::translate(stevePosModel, glm::vec3(-1.0f, -CUBESIZE, -1.0f));
 		stevePosModels = glm::scale(stevePosModels, glm::vec3(0.245f, 0.245f, 0.245f));
 		stevePosModels = glm::translate(stevePosModels, glm::vec3(0.0f, -0.032011f, 0.0f));
-		stevePosModels = glm::rotate(stevePosModels, glm::radians(-camera.Yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		stevePosModels = glm::rotate(stevePosModels, glm::radians(-camera.Yaw + 270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glUniformMatrix4fv(glGetUniformLocation(simpleDepthShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(stevePosModels));
 		glUniformMatrix4fv(glGetUniformLocation(simpleDepthShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(glGetUniformLocation(simpleDepthShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
@@ -458,11 +458,11 @@ int main(){
 
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "pointLights[0].position"), 25.0f, 8.0f, 20.0f);
 		glUniform3f(glGetUniformLocation(cubeShader.Program, "pointLights[0].ambient"), 0.05f, 0.05f, 0.05f);
-		glUniform3f(glGetUniformLocation(cubeShader.Program, "pointLights[0].diffuse"), 0.8f, 0.8f, 0.8f);
-		glUniform3f(glGetUniformLocation(cubeShader.Program, "pointLights[0].specular"), 5.0f, 5.0f, 5.0f);
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "pointLights[0].diffuse"), 0.2f, 0.2f, 0.2f);
+		glUniform3f(glGetUniformLocation(cubeShader.Program, "pointLights[0].specular"), 0.4f, 0.4f, 0.4f);
 		glUniform1f(glGetUniformLocation(cubeShader.Program, "pointLights[0].constant"), 1.0f);
-		glUniform1f(glGetUniformLocation(cubeShader.Program, "pointLights[0].linear"), 0.09);
-		glUniform1f(glGetUniformLocation(cubeShader.Program, "pointLights[0].quadratic"), 0.032);
+		glUniform1f(glGetUniformLocation(cubeShader.Program, "pointLights[0].linear"), 0.7);
+		glUniform1f(glGetUniformLocation(cubeShader.Program, "pointLights[0].quadratic"), 1.8);
 		glUniform1i(glGetUniformLocation(cubeShader.Program, "point_lights"), 1);
 		//soilIndex = 0;
 		for (int i = 0; i < WORLDWIDTH; i++) {
@@ -544,7 +544,7 @@ int main(){
 		//stevePosModel = glm::translate(stevePosModel, glm::vec3(-1.0f, -CUBESIZE, -1.0f));
 		stevePosModel = glm::scale(stevePosModel, glm::vec3(0.245f, 0.245f, 0.245f));
 		stevePosModel = glm::translate(stevePosModel, glm::vec3(0.0f, -0.032011f, 0.0f));
-		stevePosModel = glm::rotate(stevePosModel, glm::radians(-camera.Yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		stevePosModel = glm::rotate(stevePosModel, glm::radians(-camera.Yaw + 270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(stevePosModel));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(glGetUniformLocation(modelShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
