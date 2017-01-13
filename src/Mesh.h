@@ -13,15 +13,15 @@ using namespace std;
 
 
 struct Vertex {
-	// Position
+	// 位置
 	glm::vec3 Position;
-	// Normal
+	// 法线
 	glm::vec3 Normal;
-	// TexCoords
+	// 纹理坐标
 	glm::vec2 TexCoords;
-	// Tangent
+	// 切线
 	glm::vec3 Tangent;
-	// Bitangent
+	// 双切线
 	glm::vec3 Bitangent;
 };
 
@@ -33,60 +33,57 @@ struct Texture {
 
 class Mesh {
 public:
-	/*  Mesh Data  */
+	//网格数据
 	vector<Vertex> vertices;
 	vector<GLuint> indices;
 	vector<Texture> textures;
 	GLuint VAO;
 
-	/*  Functions  */
-	// Constructor
+	//构造函数
 	Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures)
 	{
 		this->vertices = vertices;
 		this->indices = indices;
 		this->textures = textures;
 
-		// Now that we have all the required data, set the vertex buffers and its attribute pointers.
+		// 设置向量缓冲和属性指针
 		this->setupMesh();
 	}
 
-	// Render the mesh
+	// 渲染网格
 	void Draw(Shader shader)
 	{
-		// Bind appropriate textures
+		// 绑定适用的纹理
 		GLuint diffuseNr = 1;
 		GLuint specularNr = 1;
 		GLuint normalNr = 1;
 		GLuint heightNr = 1;
 		for (GLuint i = 0; i < this->textures.size(); i++)
 		{
-			glActiveTexture(GL_TEXTURE0 + i); // Active proper texture unit before binding
-											  // Retrieve texture number (the N in diffuse_textureN)
+			glActiveTexture(GL_TEXTURE0 + i); // 绑定时启用适当纹理
+											 
 			stringstream ss;
 			string number;
 			string name = this->textures[i].type;
+			// 转换成stream
 			if (name == "texture_diffuse")
-				ss << diffuseNr++; // Transfer GLuint to stream
+				ss << diffuseNr++;
 			else if (name == "texture_specular")
-				ss << specularNr++; // Transfer GLuint to stream
+				ss << specularNr++; 
 			else if (name == "texture_normal")
-				ss << normalNr++; // Transfer GLuint to stream
+				ss << normalNr++; 
 			else if (name == "texture_height")
-				ss << heightNr++; // Transfer GLuint to stream
+				ss << heightNr++;
 			number = ss.str();
-			// Now set the sampler to the correct texture unit
+			// 设置纹理
 			glUniform1i(glGetUniformLocation(shader.Program, (name + number).c_str()), i);
-			// And finally bind the texture
 			glBindTexture(GL_TEXTURE_2D, this->textures[i].id);
 		}
 
-		// Draw mesh
+		//绘制网格
 		glBindVertexArray(this->VAO);
 		glDrawElements(GL_TRIANGLES, this->indices.size(), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
-
-		// Always good practice to set everything back to defaults once configured.
 		for (GLuint i = 0; i < this->textures.size(); i++)
 		{
 			glActiveTexture(GL_TEXTURE0 + i);
@@ -95,43 +92,39 @@ public:
 	}
 
 private:
-	/*  Render data  */
+	//渲染数据
 	GLuint VBO, EBO;
 
-	/*  Functions    */
-	// Initializes all the buffer objects/arrays
+	//初始化
 	void setupMesh()
 	{
-		// Create buffers/arrays
+		//创建缓冲
 		glGenVertexArrays(1, &this->VAO);
 		glGenBuffers(1, &this->VBO);
 		glGenBuffers(1, &this->EBO);
 
 		glBindVertexArray(this->VAO);
-		// Load data into vertex buffers
+		//加载顶点缓冲
 		glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
-		// A great thing about structs is that their memory layout is sequential for all its items.
-		// The effect is that we can simply pass a pointer to the struct and it translates perfectly to a glm::vec3/2 array which
-		// again translates to 3/2 floats which translates to a byte array.
 		glBufferData(GL_ARRAY_BUFFER, this->vertices.size() * sizeof(Vertex), &this->vertices[0], GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->indices.size() * sizeof(GLuint), &this->indices[0], GL_STATIC_DRAW);
 
-		// Set the vertex attribute pointers
-		// Vertex Positions
+		//设置顶点属性指针
+		//位置
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
-		// Vertex Normals
+		//法线
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, Normal));
-		// Vertex Texture Coords
+		//纹理坐标
 		glEnableVertexAttribArray(2);
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, TexCoords));
-		// Vertex Tangent
+		//切线
 		glEnableVertexAttribArray(3);
 		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, Tangent));
-		// Vertex Bitangent
+		//双切线
 		glEnableVertexAttribArray(4);
 		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, Bitangent));
 

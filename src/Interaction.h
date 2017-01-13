@@ -1,4 +1,6 @@
 #pragma once
+
+//定义涉及交互动作的常量以及函数
 enum LEFT_BUTTON_ACTION
 {
 	LBA_FREE,
