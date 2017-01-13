@@ -50,7 +50,7 @@ GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
 
 GLboolean bloom = true;
-
+GLfloat exposure = 1.0f;
 
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
@@ -326,8 +326,8 @@ int main(){
 		glm::vec3 lightPos = glm::vec3(20.0f, 25.0f, 10.0f);
 		glm::mat4 lightProjection, lightView;
 		glm::mat4 lightSpaceMatrix;
-		GLfloat near_plane = 0.1f, far_plane = 37.5f;
-		lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 0.0f, near_plane, far_plane);
+		GLfloat near_plane = 0.1f, far_plane = 47.5f;
+		lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, near_plane, far_plane);
 		//lightProjection = glm::perspective(45.0f, (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // Note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene.
 		lightView = glm::lookAt(lightPos, glm::vec3(20.0f,5.0f,25.0f), glm::vec3(0.0, 1.0, 0.0));
 		lightSpaceMatrix = lightProjection * lightView;
@@ -609,7 +609,7 @@ int main(){
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
 		
-		GLfloat exposure = 1.0f;
+		//GLfloat exposure = 1.0f;
 		glUniform1i(glGetUniformLocation(bloomShader.Program, "bloom"), bloom);
 		glUniform1f(glGetUniformLocation(bloomShader.Program, "exposure"), exposure);
 		RenderQuad();
@@ -642,6 +642,10 @@ void Do_Movement(){
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (keys[GLFW_KEY_D])
 		camera.ProcessKeyboard(RIGHT, deltaTime);
+	if (keys[GLFW_KEY_Q])
+		exposure -= 0.2 * deltaTime;
+	else if (keys[GLFW_KEY_E])
+		exposure += 0.2 * deltaTime;
 	//if (keys[GLFW_KEY_SPACE])
 		//camera.ProcessKeyboard(JUMP, deltaTime);
 	camera.ProcessFloated(deltaTime);
